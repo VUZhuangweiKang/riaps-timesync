@@ -6,6 +6,7 @@
 /dts-v1/;
 /plugin/;
 
+/*
 #define BONE_P9_26 0x180
 #define BONE_P9_24 0x184
 #define BONE_P8_07 0x090
@@ -17,11 +18,12 @@
 #define PIN_INPUT		(INPUT_EN | PULL_DISABLE)
 #define MUX_MODE0		0
 #define MUX_MODE7		7
+*/
 
-/*
+
 #include <dt-bindings/board/am335x-bbw-bbb-base.h>
 #include <dt-bindings/pinctrl/am33xx.h>
-*/
+
 
 / {
 	compatible = "ti,beaglebone", "ti,beaglebone-black", "ti,beaglebone-green";
