@@ -1,6 +1,9 @@
 /*
-*/
+    RIAPS Timesync Service
 
+    Copyright (C) Vanderbilt University, ISIS 2016
+
+*/
 #ifndef _RIAPS_TS_H_
 #define _RIAPS_TS_H_
 

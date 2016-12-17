@@ -1,8 +1,11 @@
-/*
-*/
+/**
+ *  RIAPS Timesync Service
+ *
+ *  Copyright (C) Vanderbilt University, ISIS 2016
+ */
 
 #include "riaps_ts.h"
-
+#include "chrony.h"
 
 int riaps_ts_gettime(struct riaps_ts_timespec *res)
 {
@@ -15,6 +18,7 @@ int riaps_ts_gettime(struct riaps_ts_timespec *res)
     }
     return ret;
 }
+
 
 int riaps_ts_sleep(int flags, const struct riaps_ts_timespec *request)
 {
@@ -39,5 +43,5 @@ int riaps_ts_sleep(int flags, const struct riaps_ts_timespec *request)
 
 int riaps_ts_status(struct riap_ts_status* stat)
 {
-    return -1;
+    return chrony_tracking();
 }
