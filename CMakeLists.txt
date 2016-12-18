@@ -15,7 +15,7 @@ mark_as_advanced(VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
 add_subdirectory(doc)
 include_directories(src)
 
-add_library (riaps_ts SHARED src/riaps_ts.c src/chrony.c)
+add_library(riaps_ts SHARED src/riaps_ts.c src/chrony.c)
 add_executable(test_timesync src/test_timesync.c)
-target_link_libraries (test_timesync riaps_ts)
+target_link_libraries(test_timesync riaps_ts m)
 

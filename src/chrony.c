@@ -5,6 +5,8 @@
  */
 
 /* Communication with chrony. NOTE: contains code from the crony project. */
+#include <math.h>
+
 #include "chrony.h"
 
 static int chrony_socket = -1;
@@ -112,4 +114,57 @@ int chrony_request(chrony_req* req, int req_len, chrony_rep* rep, int rep_len, i
     }
 
     return -1;
+}
+
+
+time_t sec_of_timeval(const timeval_t* timeval)
+{
+    time_t sec;
+    uint32_t sec_low = ntohl(timeval->tv_sec_low);
+    uint32_t sec_high = ntohl(timeval->tv_sec_high);
+
+    if (sec_high == TV_NOHIGHSEC) {
+        sec_high = 0;
+    }
+
+    if (sizeof(sec) > sizeof(sec_low) && sec_high != TV_NOHIGHSEC) {
+        sec = (uint64_t)sec_high << 32 | sec_low;
+    }
+    else {
+        sec = sec_low;
+    }
+
+    return sec;
+}
+
+
+long nsec_of_timeval(const timeval_t* timeval)
+{
+    return ntohl(timeval->tv_nsec);
+}
+
+#define FLOAT_EXP_BITS 7
+#define FLOAT_EXP_MIN (-(1 << (FLOAT_EXP_BITS - 1)))
+#define FLOAT_EXP_MAX (-FLOAT_EXP_MIN - 1)
+#define FLOAT_COEF_BITS ((int)sizeof (int32_t) * 8 - FLOAT_EXP_BITS)
+#define FLOAT_COEF_MIN (-(1 << (FLOAT_COEF_BITS - 1)))
+#define FLOAT_COEF_MAX (-FLOAT_COEF_MIN - 1)
+
+double double_from_chrony_float_t(const chrony_float_t* f)
+{
+    int32_t exp, coef;
+    uint32_t x;
+
+    x = ntohl(f->f);
+
+    exp = x >> FLOAT_COEF_BITS;
+    if (exp >= 1 << (FLOAT_EXP_BITS - 1))
+        exp -= 1 << FLOAT_EXP_BITS;
+    exp -= FLOAT_COEF_BITS;
+
+    coef = x % (1U << FLOAT_COEF_BITS);
+    if (coef >= 1 << (FLOAT_COEF_BITS - 1))
+        coef -= 1 << FLOAT_COEF_BITS;
+
+    return coef * pow(2.0, exp);
 }

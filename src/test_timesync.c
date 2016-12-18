@@ -12,6 +12,7 @@ int main(int argc, const char* argv[])
 {
     struct riaps_ts_timespec now;
     struct riaps_ts_timespec snooze;
+    struct riap_ts_status status;
 
     if (riaps_ts_gettime(&now)) {
         perror("ERROR: riaps_ts_gettime()");
@@ -24,10 +25,21 @@ int main(int argc, const char* argv[])
 
     for(;;) {
         riaps_ts_gettime(&now);
-        printf("NOW: %lld.%09ld secs\n", (long long)now.tv_sec, (long)now.tv_nsec);
-        if (riaps_ts_status(NULL)) {
-            printf("YES\n");
+        printf("wake: %lld.%09ld secs\n", (long long)now.tv_sec, (long)now.tv_nsec);
+        if (riaps_ts_status(&status)) {
+            perror("ERROR: riaps_ts_status()");
         }
+        else {
+            printf("\tnow: %lld.%09ld secs\n"
+                    "\tlast_offset: %.9f secs\n"
+                    "\trms_offset: %.9f secs\n"
+                    "\tppm: %.6f\n",
+                    (long long)status.now.tv_sec, (long)status.now.tv_nsec,
+                    status.last_offset,
+                    status.rms_offset,
+                    status.ppm);
+        }
+
         snooze.tv_sec++;
         riaps_ts_sleep(RIAPS_TS_ABSTIME, &snooze);
     }

@@ -35,7 +35,7 @@
 typedef struct
 {
     int32_t f;
-} float_t;
+} chrony_float_t;
 
 typedef struct
 {
@@ -43,6 +43,7 @@ typedef struct
     uint32_t tv_sec_low;
     uint32_t tv_nsec;
 } timeval_t;
+#define TV_NOHIGHSEC 0x7fffffff
 
 typedef struct
 {
@@ -100,15 +101,15 @@ typedef struct
     uint16_t stratum;
     uint16_t leap_status;
     timeval_t ref_time;
-    float_t current_correction;
-    float_t last_offset;
-    float_t rms_offset;
-    float_t freq_ppm;
-    float_t resid_freq_ppm;
-    float_t skew_ppm;
-    float_t root_delay;
-    float_t root_dispersion;
-    float_t last_update_interval;
+    chrony_float_t current_correction;
+    chrony_float_t last_offset;
+    chrony_float_t rms_offset;
+    chrony_float_t freq_ppm;
+    chrony_float_t resid_freq_ppm;
+    chrony_float_t skew_ppm;
+    chrony_float_t root_delay;
+    chrony_float_t root_dispersion;
+    chrony_float_t last_update_interval;
     int32_t EOR;
 } rep_tracking;
 
@@ -142,5 +143,8 @@ typedef struct
   offsetof(chrony_rep, data.reply_data_field.EOR)
 
 int chrony_request(chrony_req* req, int req_len, chrony_rep* rep, int rep_len, int rep_id);
+time_t sec_of_timeval(const timeval_t* timeval);
+long nsec_of_timeval(const timeval_t* timeval);
+double double_from_chrony_float_t(const chrony_float_t* f);
 
 #endif // _CHRONY_H_

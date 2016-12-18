@@ -26,10 +26,10 @@ struct riaps_ts_timespec {
 struct riap_ts_status {
     int role;
     int reference;
-    struct timespec now;
-    struct timespec last_offset;
-    struct timespec rms_offset;
-    int ppb;                /* clock skew parts per billion */
+    struct riaps_ts_timespec now;
+    double last_offset;
+    double rms_offset;
+    double ppm;                /* clock drift parts per million */
 };
 
 int riaps_ts_gettime(struct riaps_ts_timespec *res);
