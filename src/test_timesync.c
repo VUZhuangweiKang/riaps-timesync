@@ -5,6 +5,7 @@
 
 */
 #include <stdio.h>
+#include <stdlib.h>
 #include "riaps_ts.h"
 
 int main(int argc, const char* argv[])
@@ -23,7 +24,7 @@ int main(int argc, const char* argv[])
 
     for(;;) {
         riaps_ts_gettime(&now);
-        printf("NOW: %lld.%09ld secs\n", now.tv_sec, now.tv_nsec);
+        printf("NOW: %lld.%09ld secs\n", (long long)now.tv_sec, (long)now.tv_nsec);
         if (riaps_ts_status(NULL)) {
             printf("YES\n");
         }

@@ -3,6 +3,7 @@
  *
  *  Copyright (C) Vanderbilt University, ISIS 2016
  */
+#include <ctype.h>
 
 #include "riaps_ts.h"
 #include "chrony.h"
