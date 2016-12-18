@@ -43,5 +43,34 @@ int riaps_ts_sleep(int flags, const struct riaps_ts_timespec *request)
 
 int riaps_ts_status(struct riap_ts_status* stat)
 {
-    return chrony_tracking();
+    chrony_req req;
+    chrony_rep rep;
+
+    if (!stat) {
+        return -1;
+    }
+
+    req.command = htons(REQ_TRACKING);
+    if (chrony_request(&req, REQ_LENGTH(tracking), &rep, REP_LENGTH(tracking), RPY_TRACKING)) {
+        return -1;
+    }
+    if (ntohs(rep.data.tracking.ip_addr.family == IPADDR_UNSPEC)) {
+        int i;
+        uint32_t ref_id = ntohl(rep.data.tracking.ref_id);
+        char buf[sizeof(ref_id) + 1];
+
+	    memset(buf, '\0', sizeof(buf));
+        for (i = 0; i < sizeof(ref_id); i++) {
+            char c = (ref_id >> (24 - i * 8)) & 0xff;
+            if (isprint(c)) {
+                buf[i] = c;
+            }
+        }
+        printf("%s\n", buf);
+    }
+    else {
+        printf("NTP\n");
+    }
+
+    return 0;
 }

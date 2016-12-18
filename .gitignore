@@ -1,3 +1,6 @@
 # OSX-related
 *.DS_Store
 ._*
+
+# build directory
+build/

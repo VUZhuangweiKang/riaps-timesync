@@ -141,4 +141,6 @@ typedef struct
 #define REP_LENGTH(reply_data_field) \
   offsetof(chrony_rep, data.reply_data_field.EOR)
 
+int chrony_request(chrony_req* req, int req_len, chrony_rep* rep, int rep_len, int rep_id);
+
 #endif // _CHRONY_H_

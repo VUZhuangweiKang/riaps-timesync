@@ -12,11 +12,10 @@ set(VERSION_MINOR   0   CACHE STRING "Project minor version number.")
 set(VERSION_PATCH   0   CACHE STRING "Project patch version number.")
 mark_as_advanced(VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
 
-
 add_subdirectory(doc)
 include_directories(src)
 
 add_library (riaps_ts SHARED src/riaps_ts.c src/chrony.c)
-add_executable(test_ts src/test.c)
-target_link_libraries (test_ts riaps_ts)
+add_executable(test_timesync src/test_timesync.c)
+target_link_libraries (test_timesync riaps_ts)
 

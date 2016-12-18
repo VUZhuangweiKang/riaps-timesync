@@ -58,7 +58,7 @@ ondemand_end:
     return chrony_socket;
 }
 
-static int chrony_request(chrony_req* req, int req_len, chrony_rep* rep, int rep_len, int rep_id)
+int chrony_request(chrony_req* req, int req_len, chrony_rep* rep, int rep_len, int rep_id)
 {
     req->version = PROTO_VERSION_NUMBER;
     req->pkt_type = PKT_TYPE_CMD_REQUEST;
@@ -112,33 +112,4 @@ static int chrony_request(chrony_req* req, int req_len, chrony_rep* rep, int rep
     }
 
     return -1;
-}
-
-int chrony_tracking()
-{
-    chrony_req req;
-    chrony_rep rep;
-
-    req.command = htons(REQ_TRACKING);
-    if (chrony_request(&req, REQ_LENGTH(tracking), &rep, REP_LENGTH(tracking), RPY_TRACKING)) {
-        return -1;
-    }
-    if (ntohs(rep.data.tracking.ip_addr.family == IPADDR_UNSPEC)) {
-        int i;
-        uint32_t ref_id = ntohl(rep.data.tracking.ref_id);
-        char buf[sizeof(ref_id) + 1];
-
-	memset(buf, '\0', sizeof(buf));
-        for (i = 0; i < sizeof(ref_id); i++) {
-            char c = (ref_id >> (24 - i * 8)) & 0xff;
-            if (isprint(c)) {
-                buf[i] = c;
-            }
-        }
-        printf("%s\n", buf);
-    }
-    else {
-        printf("NTP\n");
-    }
-    return 0;
 }
