@@ -19,3 +19,6 @@ add_library(riaps_ts SHARED src/riaps_ts.c src/chrony.c)
 add_executable(test_timesync src/test_timesync.c)
 target_link_libraries(test_timesync riaps_ts m)
 
+install(TARGETS riaps_ts DESTINATION lib)
+install(DIRECTORY src/ DESTINATION include/riaps_ts
+        FILES_MATCHING PATTERN "*.h")
