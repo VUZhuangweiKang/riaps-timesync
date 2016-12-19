@@ -19,8 +19,8 @@
 #define RIAPS_TS_REF_PTP 3
 
 struct riaps_ts_timespec {
-    time_t   tv_sec;        /* seconds */
-    long     tv_nsec;       /* nanoseconds */
+    long    tv_sec;        /* seconds, always 32 bit */
+    long    tv_nsec;       /* nanoseconds */
 };
 
 struct riap_ts_status {
