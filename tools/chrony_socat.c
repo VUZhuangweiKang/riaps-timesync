@@ -1,5 +1,5 @@
 /*
-  chrony-sockcat - chrony socket communication debugger
+  chrony_sockcat - chrony socket communication debugger
 
   Copyright 2016, Peter Volgyesi, Vanderbilt University
 */
