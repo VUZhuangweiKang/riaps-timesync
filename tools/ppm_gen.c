@@ -8,7 +8,7 @@
 
   Copyright 2017, Peter Volgyesi, Vanderbilt University
 */
-
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -17,7 +17,7 @@
 #include <libsoc_gpio.h>
 
 // P8_19 = 22 (EHRPWM2A)
-#define PPM_OUTPUT  115
+#define PPM_OUTPUT  22
 
 void setup_scheduler()
 {
@@ -25,7 +25,7 @@ void setup_scheduler()
 
   memset(&schedp, 0, sizeof(schedp));
   schedp.sched_priority = 90;
-  if (sched_setscheduler(NULL, SCHED_FIFO, &schedp)) {
+  if (sched_setscheduler(0, SCHED_FIFO, &schedp)) {
     perror("unable to set real-time scheduler:");
     exit(-1);
   }
@@ -37,7 +37,7 @@ int main(int argc, char* argv[])
   struct timespec t;
 
   ppm_output = libsoc_gpio_request(PPM_OUTPUT, LS_SHARED);
-  if (!gpio_output) {
+  if (!ppm_output) {
     perror("unable to request gpio pin:");
     exit(-1);
   }
@@ -68,7 +68,7 @@ int main(int argc, char* argv[])
     libsoc_gpio_set_level(ppm_output, HIGH);
     usleep(10);
     libsoc_gpio_set_level(ppm_output, LOW);
-    fprintf('.');
+    printf("."); fflush(stdout);
   }
 
   if (ppm_output)
