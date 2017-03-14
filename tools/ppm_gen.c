@@ -51,16 +51,14 @@ int main(int argc, char* argv[])
 
   setup_scheduler();
 
-  if (clock_gettime(CLOCK_REALTIME, &t)) {
-    perror("clock_gettime failed:");
-    exit(-1);
-  }
-
-  t.tv_sec += 1;  // to be on the safe side initially
-  t.tv_nsec = 0;
-
   while (1) {
+     if (clock_gettime(CLOCK_REALTIME, &t)) {
+       perror("clock_gettime failed:");
+       exit(-1);
+    }
     t.tv_sec += 1;
+    t.tv_nsec = 0;
+
     if (clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &t, NULL)) {
       perror("clock_nanosleep failed:");
       exit(-1);
