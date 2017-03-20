@@ -2,13 +2,13 @@
   ******************************************************************************
   * @file    stm32l4xx_hal_rcc.h
   * @author  MCD Application Team
-  * @version V1.4.0
-  * @date    26-February-2016
+  * @version V1.7.0
+  * @date    17-February-2017
   * @brief   Header file of RCC HAL module.
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; COPYRIGHT(c) 2016 STMicroelectronics</center></h2>
+  * <h2><center>&copy; COPYRIGHT(c) 2017 STMicroelectronics</center></h2>
   *
   * Redistribution and use in source and binary forms, with or without modification,
   * are permitted provided that the following conditions are met:
@@ -71,7 +71,7 @@ typedef struct
                             This parameter must be a value of @ref RCC_PLL_Clock_Source               */
 
   uint32_t PLLM;       /*!< PLLM: Division factor for PLL VCO input clock.
-                            This parameter must be a number between Min_Data = 0 and Max_Data = 8     */
+                            This parameter must be a number between Min_Data = 1 and Max_Data = 8     */
 
   uint32_t PLLN;       /*!< PLLN: Multiplication factor for PLL VCO output clock.
                             This parameter must be a number between Min_Data = 8 and Max_Data = 86    */
@@ -106,8 +106,8 @@ typedef struct
                                       This parameter can be a value of @ref RCC_HSI_Config                        */
 
   uint32_t HSICalibrationValue;  /*!< The calibration trimming value (default is RCC_HSICALIBRATION_DEFAULT).
-                                      This parameter must be a number between Min_Data = 0x00 and Max_Data = 0x1F on STM32L47x/STM32L48x devices.
-                                      This parameter must be a number between Min_Data = 0x00 and Max_Data = 0x7F on STM32L43x/STM32L44x/STM32L49x/STM32L4Ax/ devices */
+                                      This parameter must be a number between Min_Data = 0x00 and Max_Data = 0x1F on STM32L43x/STM32L44x/STM32L47x/STM32L48x devices.
+                                      This parameter must be a number between Min_Data = 0x00 and Max_Data = 0x7F on the other devices */
 
   uint32_t LSIState;             /*!< The new state of the LSI.
                                       This parameter can be a value of @ref RCC_LSI_Config                        */
@@ -121,7 +121,7 @@ typedef struct
   uint32_t MSIClockRange;        /*!< The MSI frequency range.
                                       This parameter can be a value of @ref RCC_MSI_Clock_Range  */
 
-  uint32_t HSI48State;             /*!< The new state of the HSI48 (only applicable to STM32L43x/STM32L44x/STM32L49x/STM32L4Ax devices).
+  uint32_t HSI48State;             /*!< The new state of the HSI48 (only applicable to STM32L43x/STM32L44x/STM32L45x/STM32L46x/STM32L49x/STM32L4Ax devices).
                                         This parameter can be a value of @ref RCC_HSI48_Config */
 
   RCC_PLLInitTypeDef PLL;        /*!< Main PLL structure parameters                                               */
@@ -210,7 +210,13 @@ typedef struct
 #define RCC_HSI_OFF                    ((uint32_t)0x00000000U) /*!< HSI clock deactivation */
 #define RCC_HSI_ON                     RCC_CR_HSION           /*!< HSI clock activation */
 
-#define RCC_HSICALIBRATION_DEFAULT     ((uint32_t)16)   /*!< Default HSI calibration trimming value */
+#if defined(STM32L431xx) || defined(STM32L432xx) || defined(STM32L433xx) || defined(STM32L442xx) || defined(STM32L443xx) || \
+    defined(STM32L471xx) || defined(STM32L475xx) || defined(STM32L476xx) || defined(STM32L485xx) || defined(STM32L486xx)
+#define RCC_HSICALIBRATION_DEFAULT     ((uint32_t)0x10U)      /* Default HSI calibration trimming value */
+#else
+#define RCC_HSICALIBRATION_DEFAULT     ((uint32_t)0x40U)      /* Default HSI calibration trimming value */
+#endif /* STM32L431xx || STM32L432xx || STM32L433xx || STM32L442xx || STM32L443xx || */
+       /* STM32L471xx || STM32L475xx || STM32L476xx || STM32L485xx || STM32L486xx    */
 /**
   * @}
   */
@@ -459,9 +465,10 @@ typedef struct
 /** @defgroup RCC_RTC_Clock_Source RTC Clock Source
   * @{
   */
-#define RCC_RTCCLKSOURCE_LSE           RCC_BDCR_RTCSEL_0  /*!< LSE oscillator clock used as RTC clock */
-#define RCC_RTCCLKSOURCE_LSI           RCC_BDCR_RTCSEL_1  /*!< LSI oscillator clock used as RTC clock */
-#define RCC_RTCCLKSOURCE_HSE_DIV32     RCC_BDCR_RTCSEL    /*!< HSE oscillator clock divided by 32 used as RTC clock */
+#define RCC_RTCCLKSOURCE_NO_CLK        ((uint32_t)0x00000000U) /*!< No clock used as RTC clock */
+#define RCC_RTCCLKSOURCE_LSE           RCC_BDCR_RTCSEL_0       /*!< LSE oscillator clock used as RTC clock */
+#define RCC_RTCCLKSOURCE_LSI           RCC_BDCR_RTCSEL_1       /*!< LSI oscillator clock used as RTC clock */
+#define RCC_RTCCLKSOURCE_HSE_DIV32     RCC_BDCR_RTCSEL         /*!< HSE oscillator clock divided by 32 used as RTC clock */
 /**
   * @}
   */
@@ -648,6 +655,17 @@ typedef struct
                                                  tmpreg = READ_BIT(RCC->AHB1ENR, RCC_AHB1ENR_TSCEN); \
                                                  UNUSED(tmpreg); \
                                                } while(0)
+                                               
+#if defined(DMA2D)
+#define __HAL_RCC_DMA2D_CLK_ENABLE()           do { \
+                                                 __IO uint32_t tmpreg; \
+                                                 SET_BIT(RCC->AHB1ENR, RCC_AHB1ENR_DMA2DEN); \
+                                                 /* Delay after an RCC peripheral clock enabling */ \
+                                                 tmpreg = READ_BIT(RCC->AHB1ENR, RCC_AHB1ENR_DMA2DEN); \
+                                                 UNUSED(tmpreg); \
+                                               } while(0)
+#endif /* DMA2D */                                               
+
 
 #define __HAL_RCC_DMA1_CLK_DISABLE()           CLEAR_BIT(RCC->AHB1ENR, RCC_AHB1ENR_DMA1EN)
 
@@ -658,6 +676,10 @@ typedef struct
 #define __HAL_RCC_CRC_CLK_DISABLE()            CLEAR_BIT(RCC->AHB1ENR, RCC_AHB1ENR_CRCEN)
 
 #define __HAL_RCC_TSC_CLK_DISABLE()            CLEAR_BIT(RCC->AHB1ENR, RCC_AHB1ENR_TSCEN)
+
+#if defined(DMA2D)
+#define __HAL_RCC_DMA2D_CLK_DISABLE()          CLEAR_BIT(RCC->AHB1ENR, RCC_AHB1ENR_DMA2DEN)
+#endif /* DMA2D */   
 
 /**
   * @}
@@ -743,6 +765,16 @@ typedef struct
                                                  UNUSED(tmpreg); \
                                                } while(0)
 
+#if defined(GPIOI)
+#define __HAL_RCC_GPIOI_CLK_ENABLE()           do { \
+                                                 __IO uint32_t tmpreg; \
+                                                 SET_BIT(RCC->AHB2ENR, RCC_AHB2ENR_GPIOIEN); \
+                                                 /* Delay after an RCC peripheral clock enabling */ \
+                                                 tmpreg = READ_BIT(RCC->AHB2ENR, RCC_AHB2ENR_GPIOIEN); \
+                                                 UNUSED(tmpreg); \
+                                               } while(0)
+#endif /* GPIOI */
+
 #if defined(USB_OTG_FS)
 #define __HAL_RCC_USB_OTG_FS_CLK_ENABLE()      do { \
                                                  __IO uint32_t tmpreg; \
@@ -761,6 +793,16 @@ typedef struct
                                                  UNUSED(tmpreg); \
                                                } while(0)
 
+#if defined(DCMI)
+#define __HAL_RCC_DCMI_CLK_ENABLE()             do { \
+                                                 __IO uint32_t tmpreg; \
+                                                 SET_BIT(RCC->AHB2ENR, RCC_AHB2ENR_DCMIEN); \
+                                                 /* Delay after an RCC peripheral clock enabling */ \
+                                                 tmpreg = READ_BIT(RCC->AHB2ENR, RCC_AHB2ENR_DCMIEN); \
+                                                 UNUSED(tmpreg); \
+                                               } while(0)    
+#endif /* DCMI */
+
 #if defined(AES)
 #define __HAL_RCC_AES_CLK_ENABLE()             do { \
                                                  __IO uint32_t tmpreg; \
@@ -771,6 +813,16 @@ typedef struct
                                                } while(0)
 #endif /* AES */
 
+#if defined(HASH)
+#define __HAL_RCC_HASH_CLK_ENABLE()             do { \
+                                                 __IO uint32_t tmpreg; \
+                                                 SET_BIT(RCC->AHB2ENR, RCC_AHB2ENR_HASHEN); \
+                                                 /* Delay after an RCC peripheral clock enabling */ \
+                                                 tmpreg = READ_BIT(RCC->AHB2ENR, RCC_AHB2ENR_HASHEN); \
+                                                 UNUSED(tmpreg); \
+                                               } while(0) 
+#endif /* HASH */
+
 #define __HAL_RCC_RNG_CLK_ENABLE()             do { \
                                                  __IO uint32_t tmpreg; \
                                                  SET_BIT(RCC->AHB2ENR, RCC_AHB2ENR_RNGEN); \
@@ -778,6 +830,7 @@ typedef struct
                                                  tmpreg = READ_BIT(RCC->AHB2ENR, RCC_AHB2ENR_RNGEN); \
                                                  UNUSED(tmpreg); \
                                                } while(0)
+
 
 #define __HAL_RCC_GPIOA_CLK_DISABLE()          CLEAR_BIT(RCC->AHB2ENR, RCC_AHB2ENR_GPIOAEN)
 
@@ -803,15 +856,27 @@ typedef struct
 
 #define __HAL_RCC_GPIOH_CLK_DISABLE()          CLEAR_BIT(RCC->AHB2ENR, RCC_AHB2ENR_GPIOHEN)
 
+#if defined(GPIOI)
+#define __HAL_RCC_GPIOI_CLK_DISABLE()          CLEAR_BIT(RCC->AHB2ENR, RCC_AHB2ENR_GPIOIEN)
+#endif /* GPIOI */
+
 #if defined(USB_OTG_FS)
 #define __HAL_RCC_USB_OTG_FS_CLK_DISABLE()     CLEAR_BIT(RCC->AHB2ENR, RCC_AHB2ENR_OTGFSEN);
 #endif /* USB_OTG_FS */
 
 #define __HAL_RCC_ADC_CLK_DISABLE()            CLEAR_BIT(RCC->AHB2ENR, RCC_AHB2ENR_ADCEN)
 
+#if defined(DCMI)
+#define __HAL_RCC_DCMI_CLK_DISABLE()           CLEAR_BIT(RCC->AHB2ENR, RCC_AHB2ENR_DCMIEN)
+#endif /* DCMI */
+
 #if defined(AES)
 #define __HAL_RCC_AES_CLK_DISABLE()            CLEAR_BIT(RCC->AHB2ENR, RCC_AHB2ENR_AESEN);
 #endif /* AES */
+
+#if defined(HASH)
+#define __HAL_RCC_HASH_CLK_DISABLE()           CLEAR_BIT(RCC->AHB2ENR, RCC_AHB2ENR_HASHEN)
+#endif /* HASH */
 
 #define __HAL_RCC_RNG_CLK_DISABLE()            CLEAR_BIT(RCC->AHB2ENR, RCC_AHB2ENR_RNGEN)
 
@@ -837,6 +902,7 @@ typedef struct
                                                } while(0)
 #endif /* FMC_BANK1 */
 
+#if defined(QUADSPI)
 #define __HAL_RCC_QSPI_CLK_ENABLE()            do { \
                                                  __IO uint32_t tmpreg; \
                                                  SET_BIT(RCC->AHB3ENR, RCC_AHB3ENR_QSPIEN); \
@@ -844,12 +910,15 @@ typedef struct
                                                  tmpreg = READ_BIT(RCC->AHB3ENR, RCC_AHB3ENR_QSPIEN); \
                                                  UNUSED(tmpreg); \
                                                } while(0)
+#endif /* QUADSPI */
 
 #if defined(FMC_BANK1)
 #define __HAL_RCC_FMC_CLK_DISABLE()            CLEAR_BIT(RCC->AHB3ENR, RCC_AHB3ENR_FMCEN)
 #endif /* FMC_BANK1 */
 
+#if defined(QUADSPI)
 #define __HAL_RCC_QSPI_CLK_DISABLE()           CLEAR_BIT(RCC->AHB3ENR, RCC_AHB3ENR_QSPIEN)
+#endif /* QUADSPI */
 
 /**
   * @}
@@ -1027,6 +1096,16 @@ typedef struct
                                                  UNUSED(tmpreg); \
                                                } while(0)
 
+#if defined(I2C4)
+#define __HAL_RCC_I2C4_CLK_ENABLE()            do { \
+                                                 __IO uint32_t tmpreg; \
+                                                 SET_BIT(RCC->APB1ENR2, RCC_APB1ENR2_I2C4EN); \
+                                                 /* Delay after an RCC peripheral clock enabling */ \
+                                                 tmpreg = READ_BIT(RCC->APB1ENR2, RCC_APB1ENR2_I2C4EN); \
+                                                 UNUSED(tmpreg); \
+                                               } while(0)
+#endif /* I2C4 */
+
 #if defined(CRS)
 #define __HAL_RCC_CRS_CLK_ENABLE()             do { \
                                                  __IO uint32_t tmpreg; \
@@ -1044,6 +1123,16 @@ typedef struct
                                                  tmpreg = READ_BIT(RCC->APB1ENR1, RCC_APB1ENR1_CAN1EN); \
                                                  UNUSED(tmpreg); \
                                                } while(0)
+                                               
+#if defined(CAN2)
+#define __HAL_RCC_CAN2_CLK_ENABLE()            do { \
+                                                 __IO uint32_t tmpreg; \
+                                                 SET_BIT(RCC->APB1ENR1, RCC_APB1ENR1_CAN2EN); \
+                                                 /* Delay after an RCC peripheral clock enabling */ \
+                                                 tmpreg = READ_BIT(RCC->APB1ENR1, RCC_APB1ENR1_CAN2EN); \
+                                                 UNUSED(tmpreg); \
+                                               } while(0)
+#endif /* CAN2 */
 
 #if defined(USB)
 #define __HAL_RCC_USB_CLK_ENABLE()             do { \
@@ -1095,6 +1184,7 @@ typedef struct
                                                  UNUSED(tmpreg); \
                                                } while(0)
 
+#if defined(SWPMI1)
 #define __HAL_RCC_SWPMI1_CLK_ENABLE()          do { \
                                                  __IO uint32_t tmpreg; \
                                                  SET_BIT(RCC->APB1ENR2, RCC_APB1ENR2_SWPMI1EN); \
@@ -1102,6 +1192,7 @@ typedef struct
                                                  tmpreg = READ_BIT(RCC->APB1ENR2, RCC_APB1ENR2_SWPMI1EN); \
                                                  UNUSED(tmpreg); \
                                                } while(0)
+#endif /* SWPMI1 */
 
 #define __HAL_RCC_LPTIM2_CLK_ENABLE()          do { \
                                                  __IO uint32_t tmpreg; \
@@ -1110,6 +1201,7 @@ typedef struct
                                                  tmpreg = READ_BIT(RCC->APB1ENR2, RCC_APB1ENR2_LPTIM2EN); \
                                                  UNUSED(tmpreg); \
                                                } while(0)
+
 
 #define __HAL_RCC_TIM2_CLK_DISABLE()           CLEAR_BIT(RCC->APB1ENR1, RCC_APB1ENR1_TIM2EN)
 
@@ -1165,11 +1257,19 @@ typedef struct
 
 #define __HAL_RCC_I2C3_CLK_DISABLE()           CLEAR_BIT(RCC->APB1ENR1, RCC_APB1ENR1_I2C3EN)
 
+#if defined(I2C4)
+#define __HAL_RCC_I2C4_CLK_DISABLE()           CLEAR_BIT(RCC->APB1ENR2, RCC_APB1ENR2_I2C4EN)
+#endif /* I2C4 */
+
 #if defined(CRS)
 #define __HAL_RCC_CRS_CLK_DISABLE()            CLEAR_BIT(RCC->APB1ENR1, RCC_APB1ENR1_CRSEN);
 #endif /* CRS */
 
 #define __HAL_RCC_CAN1_CLK_DISABLE()           CLEAR_BIT(RCC->APB1ENR1, RCC_APB1ENR1_CAN1EN)
+
+#if defined(CAN2)
+#define __HAL_RCC_CAN2_CLK_DISABLE()           CLEAR_BIT(RCC->APB1ENR1, RCC_APB1ENR1_CAN2EN)
+#endif /* CAN2 */
 
 #if defined(USB)
 #define __HAL_RCC_USB_CLK_DISABLE()            CLEAR_BIT(RCC->APB1ENR1, RCC_APB1ENR1_USBFSEN);
@@ -1185,7 +1285,9 @@ typedef struct
 
 #define __HAL_RCC_LPUART1_CLK_DISABLE()        CLEAR_BIT(RCC->APB1ENR2, RCC_APB1ENR2_LPUART1EN)
 
+#if defined(SWPMI1)
 #define __HAL_RCC_SWPMI1_CLK_DISABLE()         CLEAR_BIT(RCC->APB1ENR2, RCC_APB1ENR2_SWPMI1EN)
+#endif /* SWPMI1 */
 
 #define __HAL_RCC_LPTIM2_CLK_DISABLE()         CLEAR_BIT(RCC->APB1ENR2, RCC_APB1ENR2_LPTIM2EN)
 
@@ -1306,15 +1408,16 @@ typedef struct
                                                } while(0)
 #endif /* SAI2 */
 
-#if defined(DFSDM_Filter0)
-#define __HAL_RCC_DFSDM_CLK_ENABLE()           do { \
+#if defined(DFSDM1_Filter0)
+#define __HAL_RCC_DFSDM1_CLK_ENABLE()          do { \
                                                  __IO uint32_t tmpreg; \
-                                                 SET_BIT(RCC->APB2ENR, RCC_APB2ENR_DFSDMEN); \
+                                                 SET_BIT(RCC->APB2ENR, RCC_APB2ENR_DFSDM1EN); \
                                                  /* Delay after an RCC peripheral clock enabling */ \
-                                                 tmpreg = READ_BIT(RCC->APB2ENR, RCC_APB2ENR_DFSDMEN); \
+                                                 tmpreg = READ_BIT(RCC->APB2ENR, RCC_APB2ENR_DFSDM1EN); \
                                                  UNUSED(tmpreg); \
                                                } while(0)
-#endif /* DFSDM_Filter0 */
+#endif /* DFSDM1_Filter0 */
+
 
 #define __HAL_RCC_SYSCFG_CLK_DISABLE()         CLEAR_BIT(RCC->APB2ENR, RCC_APB2ENR_SYSCFGEN)
 
@@ -1346,9 +1449,9 @@ typedef struct
 #define __HAL_RCC_SAI2_CLK_DISABLE()           CLEAR_BIT(RCC->APB2ENR, RCC_APB2ENR_SAI2EN)
 #endif /* SAI2 */
 
-#if defined(DFSDM_Filter0)
-#define __HAL_RCC_DFSDM_CLK_DISABLE()          CLEAR_BIT(RCC->APB2ENR, RCC_APB2ENR_DFSDMEN)
-#endif /* DFSDM_Filter0 */
+#if defined(DFSDM1_Filter0)
+#define __HAL_RCC_DFSDM1_CLK_DISABLE()         CLEAR_BIT(RCC->APB2ENR, RCC_APB2ENR_DFSDM1EN)
+#endif /* DFSDM1_Filter0 */
 
 /**
   * @}
@@ -1372,6 +1475,10 @@ typedef struct
 
 #define __HAL_RCC_TSC_IS_CLK_ENABLED()         (READ_BIT(RCC->AHB1ENR, RCC_AHB1ENR_TSCEN) != RESET)
 
+#if defined(DMA2D)
+#define __HAL_RCC_DMA2D_IS_CLK_ENABLED()       (READ_BIT(RCC->AHB1ENR, RCC_AHB1ENR_DMA2DEN) != RESET)
+#endif /* DMA2D */
+
 
 #define __HAL_RCC_DMA1_IS_CLK_DISABLED()       (READ_BIT(RCC->AHB1ENR, RCC_AHB1ENR_DMA1EN) == RESET)
 
@@ -1382,6 +1489,10 @@ typedef struct
 #define __HAL_RCC_CRC_IS_CLK_DISABLED()        (READ_BIT(RCC->AHB1ENR, RCC_AHB1ENR_CRCEN) == RESET)
 
 #define __HAL_RCC_TSC_IS_CLK_DISABLED()        (READ_BIT(RCC->AHB1ENR, RCC_AHB1ENR_TSCEN) == RESET)
+
+#if defined(DMA2D)
+#define __HAL_RCC_DMA2D_IS_CLK_DISABLED()      (READ_BIT(RCC->AHB1ENR, RCC_AHB1ENR_DMA2DEN) == RESET)
+#endif /* DMA2D */
 
 /**
   * @}
@@ -1419,17 +1530,30 @@ typedef struct
 
 #define __HAL_RCC_GPIOH_IS_CLK_ENABLED()       (READ_BIT(RCC->AHB2ENR, RCC_AHB2ENR_GPIOHEN) != RESET)
 
+#if defined(GPIOI)
+#define __HAL_RCC_GPIOI_IS_CLK_ENABLED()       (READ_BIT(RCC->AHB2ENR, RCC_AHB2ENR_GPIOIEN) != RESET)
+#endif /* GPIOI */
+
 #if defined(USB_OTG_FS)
 #define __HAL_RCC_USB_OTG_FS_IS_CLK_ENABLED()  (READ_BIT(RCC->AHB2ENR, RCC_AHB2ENR_OTGFSEN) != RESET)
 #endif /* USB_OTG_FS */
 
 #define __HAL_RCC_ADC_IS_CLK_ENABLED()         (READ_BIT(RCC->AHB2ENR, RCC_AHB2ENR_ADCEN) != RESET)
 
+#if defined(DCMI)
+#define __HAL_RCC_DCMI_IS_CLK_ENABLED()        (READ_BIT(RCC->AHB2ENR, RCC_AHB2ENR_DCMIEN) != RESET)
+#endif /* DCMI */
+
 #if defined(AES)
 #define __HAL_RCC_AES_IS_CLK_ENABLED()         (READ_BIT(RCC->AHB2ENR, RCC_AHB2ENR_AESEN) != RESET)
 #endif /* AES */
 
+#if defined(HASH)
+#define __HAL_RCC_HASH_IS_CLK_ENABLED()        (READ_BIT(RCC->AHB2ENR, RCC_AHB2ENR_HASHEN) != RESET)
+#endif /* HASH */
+
 #define __HAL_RCC_RNG_IS_CLK_ENABLED()         (READ_BIT(RCC->AHB2ENR, RCC_AHB2ENR_RNGEN) != RESET)
+
 
 #define __HAL_RCC_GPIOA_IS_CLK_DISABLED()      (READ_BIT(RCC->AHB2ENR, RCC_AHB2ENR_GPIOAEN) == RESET)
 
@@ -1455,15 +1579,27 @@ typedef struct
 
 #define __HAL_RCC_GPIOH_IS_CLK_DISABLED()      (READ_BIT(RCC->AHB2ENR, RCC_AHB2ENR_GPIOHEN) == RESET)
 
+#if defined(GPIOI)
+#define __HAL_RCC_GPIOI_IS_CLK_DISABLED()      (READ_BIT(RCC->AHB2ENR, RCC_AHB2ENR_GPIOIEN) == RESET)
+#endif /* GPIOI */
+
 #if defined(USB_OTG_FS)
 #define __HAL_RCC_USB_OTG_FS_IS_CLK_DISABLED() (READ_BIT(RCC->AHB2ENR, RCC_AHB2ENR_OTGFSEN) == RESET)
 #endif /* USB_OTG_FS */
 
 #define __HAL_RCC_ADC_IS_CLK_DISABLED()        (READ_BIT(RCC->AHB2ENR, RCC_AHB2ENR_ADCEN) == RESET)
 
+#if defined(DCMI)
+#define __HAL_RCC_DCMI_IS_CLK_DISABLED()       (READ_BIT(RCC->AHB2ENR, RCC_AHB2ENR_DCMIEN) == RESET)
+#endif /* DCMI */
+
 #if defined(AES)
 #define __HAL_RCC_AES_IS_CLK_DISABLED()        (READ_BIT(RCC->AHB2ENR, RCC_AHB2ENR_AESEN) == RESET)
 #endif /* AES */
+
+#if defined(HASH)
+#define __HAL_RCC_HASH_IS_CLK_DISABLED()       (READ_BIT(RCC->AHB2ENR, RCC_AHB2ENR_HASHEN) == RESET)
+#endif /* HASH */
 
 #define __HAL_RCC_RNG_IS_CLK_DISABLED()        (READ_BIT(RCC->AHB2ENR, RCC_AHB2ENR_RNGEN) == RESET)
 
@@ -1483,13 +1619,17 @@ typedef struct
 #define __HAL_RCC_FMC_IS_CLK_ENABLED()         (READ_BIT(RCC->AHB3ENR, RCC_AHB3ENR_FMCEN) != RESET)
 #endif /* FMC_BANK1 */
 
+#if defined(QUADSPI)
 #define __HAL_RCC_QSPI_IS_CLK_ENABLED()        (READ_BIT(RCC->AHB3ENR, RCC_AHB3ENR_QSPIEN) != RESET)
+#endif /* QUADSPI */
 
 #if defined(FMC_BANK1)
 #define __HAL_RCC_FMC_IS_CLK_DISABLED()        (READ_BIT(RCC->AHB3ENR, RCC_AHB3ENR_FMCEN) == RESET)
 #endif /* FMC_BANK1 */
 
+#if defined(QUADSPI)
 #define __HAL_RCC_QSPI_IS_CLK_DISABLED()       (READ_BIT(RCC->AHB3ENR, RCC_AHB3ENR_QSPIEN) == RESET)
+#endif /* QUADSPI */
 
 /**
   * @}
@@ -1559,11 +1699,19 @@ typedef struct
 
 #define __HAL_RCC_I2C3_IS_CLK_ENABLED()        (READ_BIT(RCC->APB1ENR1, RCC_APB1ENR1_I2C3EN) != RESET)
 
+#if defined(I2C4)
+#define __HAL_RCC_I2C4_IS_CLK_ENABLED()        (READ_BIT(RCC->APB1ENR2, RCC_APB1ENR2_I2C4EN) != RESET)
+#endif /* I2C4 */
+
 #if defined(CRS)
 #define __HAL_RCC_CRS_IS_CLK_ENABLED()         (READ_BIT(RCC->APB1ENR1, RCC_APB1ENR1_CRSEN) != RESET)
 #endif /* CRS */
 
 #define __HAL_RCC_CAN1_IS_CLK_ENABLED()        (READ_BIT(RCC->APB1ENR1, RCC_APB1ENR1_CAN1EN) != RESET)
+
+#if defined(CAN2)
+#define __HAL_RCC_CAN2_IS_CLK_ENABLED()        (READ_BIT(RCC->APB1ENR1, RCC_APB1ENR1_CAN2EN) != RESET)
+#endif /* CAN2 */
 
 #if defined(USB)
 #define __HAL_RCC_USB_IS_CLK_ENABLED()         (READ_BIT(RCC->APB1ENR1, RCC_APB1ENR1_USBFSEN) != RESET)
@@ -1579,9 +1727,12 @@ typedef struct
 
 #define __HAL_RCC_LPUART1_IS_CLK_ENABLED()     (READ_BIT(RCC->APB1ENR2, RCC_APB1ENR2_LPUART1EN) != RESET)
 
+#if defined(SWPMI1)
 #define __HAL_RCC_SWPMI1_IS_CLK_ENABLED()      (READ_BIT(RCC->APB1ENR2, RCC_APB1ENR2_SWPMI1EN) != RESET)
+#endif /* SWPMI1 */
 
 #define __HAL_RCC_LPTIM2_IS_CLK_ENABLED()      (READ_BIT(RCC->APB1ENR2, RCC_APB1ENR2_LPTIM2EN) != RESET)
+
 
 #define __HAL_RCC_TIM2_IS_CLK_DISABLED()       (READ_BIT(RCC->APB1ENR1, RCC_APB1ENR1_TIM2EN) == RESET)
 
@@ -1639,11 +1790,19 @@ typedef struct
 
 #define __HAL_RCC_I2C3_IS_CLK_DISABLED()       (READ_BIT(RCC->APB1ENR1, RCC_APB1ENR1_I2C3EN) == RESET)
 
+#if defined(I2C4)
+#define __HAL_RCC_I2C4_IS_CLK_DISABLED()       (READ_BIT(RCC->APB1ENR2, RCC_APB1ENR2_I2C4EN) == RESET)
+#endif /* I2C4 */
+
 #if defined(CRS)
 #define __HAL_RCC_CRS_IS_CLK_DISABLED()        (READ_BIT(RCC->APB1ENR1, RCC_APB1ENR1_CRSEN) == RESET)
 #endif /* CRS */
 
 #define __HAL_RCC_CAN1_IS_CLK_DISABLED()       (READ_BIT(RCC->APB1ENR1, RCC_APB1ENR1_CAN1EN) == RESET)
+
+#if defined(CAN2)
+#define __HAL_RCC_CAN2_IS_CLK_DISABLED()       (READ_BIT(RCC->APB1ENR1, RCC_APB1ENR1_CAN2EN) == RESET)
+#endif /* CAN2 */
 
 #if defined(USB)
 #define __HAL_RCC_USB_IS_CLK_DISABLED()        (READ_BIT(RCC->APB1ENR1, RCC_APB1ENR1_USBFSEN) == RESET)
@@ -1659,7 +1818,9 @@ typedef struct
 
 #define __HAL_RCC_LPUART1_IS_CLK_DISABLED()    (READ_BIT(RCC->APB1ENR2, RCC_APB1ENR2_LPUART1EN) == RESET)
 
+#if defined(SWPMI1)
 #define __HAL_RCC_SWPMI1_IS_CLK_DISABLED()     (READ_BIT(RCC->APB1ENR2, RCC_APB1ENR2_SWPMI1EN) == RESET)
+#endif /* SWPMI1 */
 
 #define __HAL_RCC_LPTIM2_IS_CLK_DISABLED()     (READ_BIT(RCC->APB1ENR2, RCC_APB1ENR2_LPTIM2EN) == RESET)
 
@@ -1707,9 +1868,10 @@ typedef struct
 #define __HAL_RCC_SAI2_IS_CLK_ENABLED()        (READ_BIT(RCC->APB2ENR, RCC_APB2ENR_SAI2EN) != RESET)
 #endif /* SAI2 */
 
-#if defined(DFSDM_Filter0)
-#define __HAL_RCC_DFSDM_IS_CLK_ENABLED()       (READ_BIT(RCC->APB2ENR, RCC_APB2ENR_DFSDMEN) != RESET)
-#endif /* DFSDM_Filter0 */
+#if defined(DFSDM1_Filter0)
+#define __HAL_RCC_DFSDM1_IS_CLK_ENABLED()      (READ_BIT(RCC->APB2ENR, RCC_APB2ENR_DFSDM1EN) != RESET)
+#endif /* DFSDM1_Filter0 */
+
 
 #define __HAL_RCC_SYSCFG_IS_CLK_DISABLED()     (READ_BIT(RCC->APB2ENR, RCC_APB2ENR_SYSCFGEN) == RESET)
 
@@ -1741,9 +1903,9 @@ typedef struct
 #define __HAL_RCC_SAI2_IS_CLK_DISABLED()       (READ_BIT(RCC->APB2ENR, RCC_APB2ENR_SAI2EN) == RESET)
 #endif /* SAI2 */
 
-#if defined(DFSDM_Filter0)
-#define __HAL_RCC_DFSDM_IS_CLK_DISABLED()      (READ_BIT(RCC->APB2ENR, RCC_APB2ENR_DFSDMEN) == RESET)
-#endif /* DFSDM_Filter0 */
+#if defined(DFSDM1_Filter0)
+#define __HAL_RCC_DFSDM1_IS_CLK_DISABLED()     (READ_BIT(RCC->APB2ENR, RCC_APB2ENR_DFSDM1EN) == RESET)
+#endif /* DFSDM1_Filter0 */
 
 /**
   * @}
@@ -1765,6 +1927,10 @@ typedef struct
 
 #define __HAL_RCC_TSC_FORCE_RESET()            SET_BIT(RCC->AHB1RSTR, RCC_AHB1RSTR_TSCRST)
 
+#if defined(DMA2D)
+#define __HAL_RCC_DMA2D_FORCE_RESET()          SET_BIT(RCC->AHB1RSTR, RCC_AHB1RSTR_DMA2DRST)
+#endif /* DMA2D */
+
 
 #define __HAL_RCC_AHB1_RELEASE_RESET()         WRITE_REG(RCC->AHB1RSTR, 0x00000000U)
 
@@ -1777,6 +1943,10 @@ typedef struct
 #define __HAL_RCC_CRC_RELEASE_RESET()          CLEAR_BIT(RCC->AHB1RSTR, RCC_AHB1RSTR_CRCRST)
 
 #define __HAL_RCC_TSC_RELEASE_RESET()          CLEAR_BIT(RCC->AHB1RSTR, RCC_AHB1RSTR_TSCRST)
+
+#if defined(DMA2D)
+#define __HAL_RCC_DMA2D_RELEASE_RESET()        CLEAR_BIT(RCC->AHB1RSTR, RCC_AHB1RSTR_DMA2DRST)
+#endif /* DMA2D */
 
 /**
   * @}
@@ -1812,17 +1982,30 @@ typedef struct
 
 #define __HAL_RCC_GPIOH_FORCE_RESET()          SET_BIT(RCC->AHB2RSTR, RCC_AHB2RSTR_GPIOHRST)
 
+#if defined(GPIOI)
+#define __HAL_RCC_GPIOI_FORCE_RESET()          SET_BIT(RCC->AHB2RSTR, RCC_AHB2RSTR_GPIOIRST)
+#endif /* GPIOI */
+
 #if defined(USB_OTG_FS)
 #define __HAL_RCC_USB_OTG_FS_FORCE_RESET()     SET_BIT(RCC->AHB2RSTR, RCC_AHB2RSTR_OTGFSRST)
 #endif /* USB_OTG_FS */
 
 #define __HAL_RCC_ADC_FORCE_RESET()            SET_BIT(RCC->AHB2RSTR, RCC_AHB2RSTR_ADCRST)
 
+#if defined(DCMI)
+#define __HAL_RCC_DCMI_FORCE_RESET()           SET_BIT(RCC->AHB2RSTR, RCC_AHB2RSTR_DCMIRST)
+#endif /* DCMI */
+
 #if defined(AES)
 #define __HAL_RCC_AES_FORCE_RESET()            SET_BIT(RCC->AHB2RSTR, RCC_AHB2RSTR_AESRST)
 #endif /* AES */
 
+#if defined(HASH)
+#define __HAL_RCC_HASH_FORCE_RESET()           SET_BIT(RCC->AHB2RSTR, RCC_AHB2RSTR_HASHRST)
+#endif /* HASH */
+
 #define __HAL_RCC_RNG_FORCE_RESET()            SET_BIT(RCC->AHB2RSTR, RCC_AHB2RSTR_RNGRST)
+
 
 #define __HAL_RCC_AHB2_RELEASE_RESET()         WRITE_REG(RCC->AHB2RSTR, 0x00000000U)
 
@@ -1850,15 +2033,27 @@ typedef struct
 
 #define __HAL_RCC_GPIOH_RELEASE_RESET()        CLEAR_BIT(RCC->AHB2RSTR, RCC_AHB2RSTR_GPIOHRST)
 
+#if defined(GPIOI)
+#define __HAL_RCC_GPIOI_RELEASE_RESET()        CLEAR_BIT(RCC->AHB2RSTR, RCC_AHB2RSTR_GPIOIRST)
+#endif /* GPIOI */
+
 #if defined(USB_OTG_FS)
 #define __HAL_RCC_USB_OTG_FS_RELEASE_RESET()   CLEAR_BIT(RCC->AHB2RSTR, RCC_AHB2RSTR_OTGFSRST)
 #endif /* USB_OTG_FS */
 
 #define __HAL_RCC_ADC_RELEASE_RESET()          CLEAR_BIT(RCC->AHB2RSTR, RCC_AHB2RSTR_ADCRST)
 
+#if defined(DCMI)
+#define __HAL_RCC_DCMI_RELEASE_RESET()         CLEAR_BIT(RCC->AHB2RSTR, RCC_AHB2RSTR_DCMIRST)
+#endif /* DCMI */
+
 #if defined(AES)
 #define __HAL_RCC_AES_RELEASE_RESET()          CLEAR_BIT(RCC->AHB2RSTR, RCC_AHB2RSTR_AESRST)
 #endif /* AES */
+
+#if defined(HASH)
+#define __HAL_RCC_HASH_RELEASE_RESET()         CLEAR_BIT(RCC->AHB2RSTR, RCC_AHB2RSTR_HASHRST)
+#endif /* HASH */
 
 #define __HAL_RCC_RNG_RELEASE_RESET()          CLEAR_BIT(RCC->AHB2RSTR, RCC_AHB2RSTR_RNGRST)
 
@@ -1876,7 +2071,9 @@ typedef struct
 #define __HAL_RCC_FMC_FORCE_RESET()            SET_BIT(RCC->AHB3RSTR, RCC_AHB3RSTR_FMCRST)
 #endif /* FMC_BANK1 */
 
+#if defined(QUADSPI)
 #define __HAL_RCC_QSPI_FORCE_RESET()           SET_BIT(RCC->AHB3RSTR, RCC_AHB3RSTR_QSPIRST)
+#endif /* QUADSPI */
 
 #define __HAL_RCC_AHB3_RELEASE_RESET()         WRITE_REG(RCC->AHB3RSTR, 0x00000000U)
 
@@ -1884,7 +2081,9 @@ typedef struct
 #define __HAL_RCC_FMC_RELEASE_RESET()          CLEAR_BIT(RCC->AHB3RSTR, RCC_AHB3RSTR_FMCRST)
 #endif /* FMC_BANK1 */
 
+#if defined(QUADSPI)
 #define __HAL_RCC_QSPI_RELEASE_RESET()         CLEAR_BIT(RCC->AHB3RSTR, RCC_AHB3RSTR_QSPIRST)
+#endif /* QUADSPI */
 
 /**
   * @}
@@ -1946,11 +2145,19 @@ typedef struct
 
 #define __HAL_RCC_I2C3_FORCE_RESET()           SET_BIT(RCC->APB1RSTR1, RCC_APB1RSTR1_I2C3RST)
 
+#if defined(I2C4)
+#define __HAL_RCC_I2C4_FORCE_RESET()           SET_BIT(RCC->APB1RSTR2, RCC_APB1RSTR2_I2C4RST)
+#endif /* I2C4 */
+
 #if defined(CRS)
 #define __HAL_RCC_CRS_FORCE_RESET()            SET_BIT(RCC->APB1RSTR1, RCC_APB1RSTR1_CRSRST)
 #endif /* CRS */
 
 #define __HAL_RCC_CAN1_FORCE_RESET()           SET_BIT(RCC->APB1RSTR1, RCC_APB1RSTR1_CAN1RST)
+
+#if defined(CAN2)
+#define __HAL_RCC_CAN2_FORCE_RESET()           SET_BIT(RCC->APB1RSTR1, RCC_APB1RSTR1_CAN2RST)
+#endif /* CAN2 */
 
 #if defined(USB)
 #define __HAL_RCC_USB_FORCE_RESET()            SET_BIT(RCC->APB1RSTR1, RCC_APB1RSTR1_USBFSRST)
@@ -1966,9 +2173,12 @@ typedef struct
 
 #define __HAL_RCC_LPUART1_FORCE_RESET()        SET_BIT(RCC->APB1RSTR2, RCC_APB1RSTR2_LPUART1RST)
 
+#if defined(SWPMI1)
 #define __HAL_RCC_SWPMI1_FORCE_RESET()         SET_BIT(RCC->APB1RSTR2, RCC_APB1RSTR2_SWPMI1RST)
+#endif /* SWPMI1 */
 
 #define __HAL_RCC_LPTIM2_FORCE_RESET()         SET_BIT(RCC->APB1RSTR2, RCC_APB1RSTR2_LPTIM2RST)
+
 
 #define __HAL_RCC_APB1_RELEASE_RESET()         WRITE_REG(RCC->APB1RSTR1, 0x00000000U)
 
@@ -2022,11 +2232,19 @@ typedef struct
 
 #define __HAL_RCC_I2C3_RELEASE_RESET()         CLEAR_BIT(RCC->APB1RSTR1, RCC_APB1RSTR1_I2C3RST)
 
+#if defined(I2C4)
+#define __HAL_RCC_I2C4_RELEASE_RESET()         CLEAR_BIT(RCC->APB1RSTR2, RCC_APB1RSTR2_I2C4RST)
+#endif /* I2C4 */
+
 #if defined(CRS)
 #define __HAL_RCC_CRS_RELEASE_RESET()          CLEAR_BIT(RCC->APB1RSTR1, RCC_APB1RSTR1_CRSRST)
 #endif /* CRS */
 
 #define __HAL_RCC_CAN1_RELEASE_RESET()         CLEAR_BIT(RCC->APB1RSTR1, RCC_APB1RSTR1_CAN1RST)
+
+#if defined(CAN2)
+#define __HAL_RCC_CAN2_RELEASE_RESET()         CLEAR_BIT(RCC->APB1RSTR1, RCC_APB1RSTR1_CAN2RST)
+#endif /* CAN2 */
 
 #if defined(USB)
 #define __HAL_RCC_USB_RELEASE_RESET()          CLEAR_BIT(RCC->APB1RSTR1, RCC_APB1RSTR1_USBFSRST)
@@ -2042,7 +2260,9 @@ typedef struct
 
 #define __HAL_RCC_LPUART1_RELEASE_RESET()      CLEAR_BIT(RCC->APB1RSTR2, RCC_APB1RSTR2_LPUART1RST)
 
+#if defined(SWPMI1)
 #define __HAL_RCC_SWPMI1_RELEASE_RESET()       CLEAR_BIT(RCC->APB1RSTR2, RCC_APB1RSTR2_SWPMI1RST)
+#endif /* SWPMI1 */
 
 #define __HAL_RCC_LPTIM2_RELEASE_RESET()       CLEAR_BIT(RCC->APB1RSTR2, RCC_APB1RSTR2_LPTIM2RST)
 
@@ -2086,9 +2306,10 @@ typedef struct
 #define __HAL_RCC_SAI2_FORCE_RESET()           SET_BIT(RCC->APB2RSTR, RCC_APB2RSTR_SAI2RST)
 #endif /* SAI2 */
 
-#if defined(DFSDM_Filter0)
-#define __HAL_RCC_DFSDM_FORCE_RESET()          SET_BIT(RCC->APB2RSTR, RCC_APB2RSTR_DFSDMRST)
-#endif /* DFSDM_Filter0 */
+#if defined(DFSDM1_Filter0)
+#define __HAL_RCC_DFSDM1_FORCE_RESET()         SET_BIT(RCC->APB2RSTR, RCC_APB2RSTR_DFSDM1RST)
+#endif /* DFSDM1_Filter0 */
+
 
 #define __HAL_RCC_APB2_RELEASE_RESET()         WRITE_REG(RCC->APB2RSTR, 0x00000000U)
 
@@ -2122,9 +2343,9 @@ typedef struct
 #define __HAL_RCC_SAI2_RELEASE_RESET()         CLEAR_BIT(RCC->APB2RSTR, RCC_APB2RSTR_SAI2RST)
 #endif /* SAI2 */
 
-#if defined(DFSDM_Filter0)
-#define __HAL_RCC_DFSDM_RELEASE_RESET()        CLEAR_BIT(RCC->APB2RSTR, RCC_APB2RSTR_DFSDMRST)
-#endif /* DFSDM_Filter0 */
+#if defined(DFSDM1_Filter0)
+#define __HAL_RCC_DFSDM1_RELEASE_RESET()       CLEAR_BIT(RCC->APB2RSTR, RCC_APB2RSTR_DFSDM1RST)
+#endif /* DFSDM1_Filter0 */
 
 /**
   * @}
@@ -2151,6 +2372,10 @@ typedef struct
 
 #define __HAL_RCC_TSC_CLK_SLEEP_ENABLE()       SET_BIT(RCC->AHB1SMENR, RCC_AHB1SMENR_TSCSMEN)
 
+#if defined(DMA2D)
+#define __HAL_RCC_DMA2D_CLK_SLEEP_ENABLE()     SET_BIT(RCC->AHB1SMENR, RCC_AHB1SMENR_DMA2DSMEN)
+#endif /* DMA2D */
+
 
 #define __HAL_RCC_DMA1_CLK_SLEEP_DISABLE()     CLEAR_BIT(RCC->AHB1SMENR, RCC_AHB1SMENR_DMA1SMEN)
 
@@ -2163,6 +2388,10 @@ typedef struct
 #define __HAL_RCC_CRC_CLK_SLEEP_DISABLE()      CLEAR_BIT(RCC->AHB1SMENR, RCC_AHB1SMENR_CRCSMEN)
 
 #define __HAL_RCC_TSC_CLK_SLEEP_DISABLE()      CLEAR_BIT(RCC->AHB1SMENR, RCC_AHB1SMENR_TSCSMEN)
+
+#if defined(DMA2D)
+#define __HAL_RCC_DMA2D_CLK_SLEEP_DISABLE()    CLEAR_BIT(RCC->AHB1SMENR, RCC_AHB1SMENR_DMA2DSMEN)
+#endif /* DMA2D */
 
 /**
   * @}
@@ -2201,6 +2430,10 @@ typedef struct
 
 #define __HAL_RCC_GPIOH_CLK_SLEEP_ENABLE()     SET_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_GPIOHSMEN)
 
+#if defined(GPIOI)
+#define __HAL_RCC_GPIOI_CLK_SLEEP_ENABLE()     SET_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_GPIOISMEN)
+#endif /* GPIOI */
+
 #define __HAL_RCC_SRAM2_CLK_SLEEP_ENABLE()     SET_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_SRAM2SMEN)
 
 #if defined(USB_OTG_FS)
@@ -2209,11 +2442,20 @@ typedef struct
 
 #define __HAL_RCC_ADC_CLK_SLEEP_ENABLE()       SET_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_ADCSMEN)
 
+#if defined(DCMI)
+#define __HAL_RCC_DCMI_CLK_SLEEP_ENABLE()      SET_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_DCMISMEN)
+#endif /* DCMI */
+
 #if defined(AES)
 #define __HAL_RCC_AES_CLK_SLEEP_ENABLE()       SET_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_AESSMEN)
 #endif /* AES */
 
+#if defined(HASH)
+#define __HAL_RCC_HASH_CLK_SLEEP_ENABLE()      SET_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_HASHSMEN)
+#endif /* HASH */
+
 #define __HAL_RCC_RNG_CLK_SLEEP_ENABLE()       SET_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_RNGSMEN)
+
 
 #define __HAL_RCC_GPIOA_CLK_SLEEP_DISABLE()    CLEAR_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_GPIOASMEN)
 
@@ -2239,6 +2481,10 @@ typedef struct
 
 #define __HAL_RCC_GPIOH_CLK_SLEEP_DISABLE()    CLEAR_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_GPIOHSMEN)
 
+#if defined(GPIOI)
+#define __HAL_RCC_GPIOI_CLK_SLEEP_DISABLE()    CLEAR_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_GPIOISMEN)
+#endif /* GPIOI */
+
 #define __HAL_RCC_SRAM2_CLK_SLEEP_DISABLE()    CLEAR_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_SRAM2SMEN)
 
 #if defined(USB_OTG_FS)
@@ -2247,9 +2493,17 @@ typedef struct
 
 #define __HAL_RCC_ADC_CLK_SLEEP_DISABLE()      CLEAR_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_ADCSMEN)
 
+#if defined(DCMI)
+#define __HAL_RCC_DCMI_CLK_SLEEP_DISABLE()     CLEAR_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_DCMISMEN)
+#endif /* DCMI */
+
 #if defined(AES)
 #define __HAL_RCC_AES_CLK_SLEEP_DISABLE()      CLEAR_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_AESSMEN)
 #endif /* AES */
+
+#if defined(HASH)
+#define __HAL_RCC_HASH_CLK_SLEEP_DISABLE()     CLEAR_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_HASHSMEN)
+#endif /* HASH */
 
 #define __HAL_RCC_RNG_CLK_SLEEP_DISABLE()      CLEAR_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_RNGSMEN)
 
@@ -2266,13 +2520,17 @@ typedef struct
   * @{
   */
 
+#if defined(QUADSPI)
 #define __HAL_RCC_QSPI_CLK_SLEEP_ENABLE()      SET_BIT(RCC->AHB3SMENR, RCC_AHB3SMENR_QSPISMEN)
+#endif /* QUADSPI */
 
 #if defined(FMC_BANK1)
 #define __HAL_RCC_FMC_CLK_SLEEP_ENABLE()       SET_BIT(RCC->AHB3SMENR, RCC_AHB3SMENR_FMCSMEN)
 #endif /* FMC_BANK1 */
 
+#if defined(QUADSPI)
 #define __HAL_RCC_QSPI_CLK_SLEEP_DISABLE()     CLEAR_BIT(RCC->AHB3SMENR, RCC_AHB3SMENR_QSPISMEN)
+#endif /* QUADSPI */
 
 #if defined(FMC_BANK1)
 #define __HAL_RCC_FMC_CLK_SLEEP_DISABLE()      CLEAR_BIT(RCC->AHB3SMENR, RCC_AHB3SMENR_FMCSMEN)
@@ -2347,11 +2605,19 @@ typedef struct
 
 #define __HAL_RCC_I2C3_CLK_SLEEP_ENABLE()      SET_BIT(RCC->APB1SMENR1, RCC_APB1SMENR1_I2C3SMEN)
 
+#if defined(I2C4)
+#define __HAL_RCC_I2C4_CLK_SLEEP_ENABLE()      SET_BIT(RCC->APB1SMENR2, RCC_APB1SMENR2_I2C4SMEN)
+#endif /* I2C4 */
+
 #if defined(CRS)
 #define __HAL_RCC_CRS_CLK_SLEEP_ENABLE()       SET_BIT(RCC->APB1SMENR1, RCC_APB1SMENR1_CRSSMEN)
 #endif /* CRS */
 
 #define __HAL_RCC_CAN1_CLK_SLEEP_ENABLE()      SET_BIT(RCC->APB1SMENR1, RCC_APB1SMENR1_CAN1SMEN)
+
+#if defined(CAN2)
+#define __HAL_RCC_CAN2_CLK_SLEEP_ENABLE()      SET_BIT(RCC->APB1SMENR1, RCC_APB1SMENR1_CAN2SMEN)
+#endif /* CAN2 */
 
 #if defined(USB)
 #define __HAL_RCC_USB_CLK_SLEEP_ENABLE()       SET_BIT(RCC->APB1SMENR1, RCC_APB1SMENR1_USBFSSMEN)
@@ -2367,9 +2633,12 @@ typedef struct
 
 #define __HAL_RCC_LPUART1_CLK_SLEEP_ENABLE()   SET_BIT(RCC->APB1SMENR2, RCC_APB1SMENR2_LPUART1SMEN)
 
+#if defined(SWPMI1)
 #define __HAL_RCC_SWPMI1_CLK_SLEEP_ENABLE()    SET_BIT(RCC->APB1SMENR2, RCC_APB1SMENR2_SWPMI1SMEN)
+#endif /* SWPMI1 */
 
 #define __HAL_RCC_LPTIM2_CLK_SLEEP_ENABLE()    SET_BIT(RCC->APB1SMENR2, RCC_APB1SMENR2_LPTIM2SMEN)
+
 
 #define __HAL_RCC_TIM2_CLK_SLEEP_DISABLE()     CLEAR_BIT(RCC->APB1SMENR1, RCC_APB1SMENR1_TIM2SMEN)
 
@@ -2427,11 +2696,19 @@ typedef struct
 
 #define __HAL_RCC_I2C3_CLK_SLEEP_DISABLE()     CLEAR_BIT(RCC->APB1SMENR1, RCC_APB1SMENR1_I2C3SMEN)
 
+#if defined(I2C4)
+#define __HAL_RCC_I2C4_CLK_SLEEP_DISABLE()     CLEAR_BIT(RCC->APB1SMENR2, RCC_APB1SMENR2_I2C4SMEN)
+#endif /* I2C4 */
+
 #if defined(CRS)
 #define __HAL_RCC_CRS_CLK_SLEEP_DISABLE()      CLEAR_BIT(RCC->APB1SMENR1, RCC_APB1SMENR1_CRSSMEN)
 #endif /* CRS */
 
 #define __HAL_RCC_CAN1_CLK_SLEEP_DISABLE()     CLEAR_BIT(RCC->APB1SMENR1, RCC_APB1SMENR1_CAN1SMEN)
+
+#if defined(CAN2)
+#define __HAL_RCC_CAN2_CLK_SLEEP_DISABLE()     CLEAR_BIT(RCC->APB1SMENR1, RCC_APB1SMENR1_CAN2SMEN)
+#endif /* CAN2 */
 
 #if defined(USB)
 #define __HAL_RCC_USB_CLK_SLEEP_DISABLE()      CLEAR_BIT(RCC->APB1SMENR1, RCC_APB1SMENR1_USBFSSMEN)
@@ -2447,7 +2724,9 @@ typedef struct
 
 #define __HAL_RCC_LPUART1_CLK_SLEEP_DISABLE()  CLEAR_BIT(RCC->APB1SMENR2, RCC_APB1SMENR2_LPUART1SMEN)
 
+#if defined(SWPMI1)
 #define __HAL_RCC_SWPMI1_CLK_SLEEP_DISABLE()   CLEAR_BIT(RCC->APB1SMENR2, RCC_APB1SMENR2_SWPMI1SMEN)
+#endif /* SWPMI1 */
 
 #define __HAL_RCC_LPTIM2_CLK_SLEEP_DISABLE()   CLEAR_BIT(RCC->APB1SMENR2, RCC_APB1SMENR2_LPTIM2SMEN)
 
@@ -2494,9 +2773,10 @@ typedef struct
 #define __HAL_RCC_SAI2_CLK_SLEEP_ENABLE()      SET_BIT(RCC->APB2SMENR, RCC_APB2SMENR_SAI2SMEN)
 #endif /* SAI2 */
 
-#if defined(DFSDM_Filter0)
-#define __HAL_RCC_DFSDM_CLK_SLEEP_ENABLE()     SET_BIT(RCC->APB2SMENR, RCC_APB2SMENR_DFSDMSMEN)
-#endif /* DFSDM_Filter0 */
+#if defined(DFSDM1_Filter0)
+#define __HAL_RCC_DFSDM1_CLK_SLEEP_ENABLE()    SET_BIT(RCC->APB2SMENR, RCC_APB2SMENR_DFSDM1SMEN)
+#endif /* DFSDM1_Filter0 */
+
 
 #define __HAL_RCC_SYSCFG_CLK_SLEEP_DISABLE()   CLEAR_BIT(RCC->APB2SMENR, RCC_APB2SMENR_SYSCFGSMEN)
 
@@ -2528,9 +2808,9 @@ typedef struct
 #define __HAL_RCC_SAI2_CLK_SLEEP_DISABLE()     CLEAR_BIT(RCC->APB2SMENR, RCC_APB2SMENR_SAI2SMEN)
 #endif /* SAI2 */
 
-#if defined(DFSDM_Filter0)
-#define __HAL_RCC_DFSDM_CLK_SLEEP_DISABLE()    CLEAR_BIT(RCC->APB2SMENR, RCC_APB2SMENR_DFSDMSMEN)
-#endif /* DFSDM_Filter0 */
+#if defined(DFSDM1_Filter0)
+#define __HAL_RCC_DFSDM1_CLK_SLEEP_DISABLE()   CLEAR_BIT(RCC->APB2SMENR, RCC_APB2SMENR_DFSDM1SMEN)
+#endif /* DFSDM1_Filter0 */
 
 /**
   * @}
@@ -2557,6 +2837,10 @@ typedef struct
 
 #define __HAL_RCC_TSC_IS_CLK_SLEEP_ENABLED()     (READ_BIT(RCC->AHB1SMENR, RCC_AHB1SMENR_TSCSMEN) != RESET)
 
+#if defined(DMA2D)
+#define __HAL_RCC_DMA2D_IS_CLK_SLEEP_ENABLED()   (READ_BIT(RCC->AHB1SMENR, RCC_AHB1SMENR_DMA2DSMEN) != RESET)
+#endif /* DMA2D */
+
 
 #define __HAL_RCC_DMA1_IS_CLK_SLEEP_DISABLED()   (READ_BIT(RCC->AHB1SMENR, RCC_AHB1SMENR_DMA1SMEN) == RESET)
 
@@ -2570,6 +2854,9 @@ typedef struct
 
 #define __HAL_RCC_TSC_IS_CLK_SLEEP_DISABLED()    (READ_BIT(RCC->AHB1SMENR, RCC_AHB1SMENR_TSCSMEN) == RESET)
 
+#if defined(DMA2D)
+#define __HAL_RCC_DMA2D_IS_CLK_SLEEP_DISABLED()  (READ_BIT(RCC->AHB1SMENR, RCC_AHB1SMENR_DMA2DSMEN) == RESET)
+#endif /* DMA2D */
 
 /**
   * @}
@@ -2608,6 +2895,10 @@ typedef struct
 
 #define __HAL_RCC_GPIOH_IS_CLK_SLEEP_ENABLED()   (READ_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_GPIOHSMEN) != RESET)
 
+#if defined(GPIOI)
+#define __HAL_RCC_GPIOI_IS_CLK_SLEEP_ENABLED()   (READ_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_GPIOISMEN) != RESET)
+#endif /* GPIOI */
+
 #define __HAL_RCC_SRAM2_IS_CLK_SLEEP_ENABLED()   (READ_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_SRAM2SMEN) != RESET)
 
 #if defined(USB_OTG_FS)
@@ -2616,11 +2907,20 @@ typedef struct
 
 #define __HAL_RCC_ADC_IS_CLK_SLEEP_ENABLED()     (READ_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_ADCSMEN) != RESET)
 
+#if defined(DCMI)
+#define __HAL_RCC_DCMI_IS_CLK_SLEEP_ENABLED()    (READ_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_DCMISMEN) != RESET)
+#endif /* DCMI */
+
 #if defined(AES)
 #define __HAL_RCC_AES_IS_CLK_SLEEP_ENABLED()     (READ_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_AESSMEN) != RESET)
 #endif /* AES */
 
+#if defined(HASH)
+#define __HAL_RCC_HASH_IS_CLK_SLEEP_ENABLED()    (READ_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_HASHSMEN) != RESET)
+#endif /* HASH */
+
 #define __HAL_RCC_RNG_IS_CLK_SLEEP_ENABLED()     (READ_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_RNGSMEN) != RESET)
+
 
 #define __HAL_RCC_GPIOA_IS_CLK_SLEEP_DISABLED()  (READ_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_GPIOASMEN) == RESET)
 
@@ -2646,6 +2946,10 @@ typedef struct
 
 #define __HAL_RCC_GPIOH_IS_CLK_SLEEP_DISABLED()  (READ_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_GPIOHSMEN) == RESET)
 
+#if defined(GPIOI)
+#define __HAL_RCC_GPIOI_IS_CLK_SLEEP_DISABLED()  (READ_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_GPIOISMEN) == RESET)
+#endif /* GPIOI */
+
 #define __HAL_RCC_SRAM2_IS_CLK_SLEEP_DISABLED()  (READ_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_SRAM2SMEN) == RESET)
 
 #if defined(USB_OTG_FS)
@@ -2654,9 +2958,17 @@ typedef struct
 
 #define __HAL_RCC_ADC_IS_CLK_SLEEP_DISABLED()    (READ_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_ADCSMEN) == RESET)
 
+#if defined(DCMI)
+#define __HAL_RCC_DCMI_IS_CLK_SLEEP_DISABLED()   (READ_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_DCMISMEN) == RESET)
+#endif /* DCMI */
+
 #if defined(AES)
 #define __HAL_RCC_AES_IS_CLK_SLEEP_DISABLED()    (READ_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_AESSMEN) == RESET)
 #endif /* AES */
+
+#if defined(HASH)
+#define __HAL_RCC_HASH_IS_CLK_SLEEP_DISABLED()   (READ_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_HASHSMEN) == RESET)
+#endif /* HASH */
 
 #define __HAL_RCC_RNG_IS_CLK_SLEEP_DISABLED()    (READ_BIT(RCC->AHB2SMENR, RCC_AHB2SMENR_RNGSMEN) == RESET)
 
@@ -2673,13 +2985,17 @@ typedef struct
   * @{
   */
 
+#if defined(QUADSPI)
 #define __HAL_RCC_QSPI_IS_CLK_SLEEP_ENABLED()    (READ_BIT(RCC->AHB3SMENR, RCC_AHB3SMENR_QSPISMEN) != RESET)
+#endif /* QUADSPI */
 
 #if defined(FMC_BANK1)
 #define __HAL_RCC_FMC_IS_CLK_SLEEP_ENABLED()     (READ_BIT(RCC->AHB3SMENR, RCC_AHB3SMENR_FMCSMEN) != RESET)
 #endif /* FMC_BANK1 */
 
+#if defined(QUADSPI)
 #define __HAL_RCC_QSPI_IS_CLK_SLEEP_DISABLED()   (READ_BIT(RCC->AHB3SMENR, RCC_AHB3SMENR_QSPISMEN) == RESET)
+#endif /* QUADSPI */
 
 #if defined(FMC_BANK1)
 #define __HAL_RCC_FMC_IS_CLK_SLEEP_DISABLED()    (READ_BIT(RCC->AHB3SMENR, RCC_AHB3SMENR_FMCSMEN) == RESET)
@@ -2754,11 +3070,19 @@ typedef struct
 
 #define __HAL_RCC_I2C3_IS_CLK_SLEEP_ENABLED()      (READ_BIT(RCC->APB1SMENR1, RCC_APB1SMENR1_I2C3SMEN) != RESET)
 
+#if defined(I2C4)
+#define __HAL_RCC_I2C4_IS_CLK_SLEEP_ENABLED()      (READ_BIT(RCC->APB1SMENR2, RCC_APB1SMENR2_I2C4SMEN) != RESET)
+#endif /* I2C4 */
+
 #if defined(CRS)
 #define __HAL_RCC_CRS_IS_CLK_SLEEP_ENABLED()       (READ_BIT(RCC->APB1SMENR1, RCC_APB1SMENR1_CRSSMEN) != RESET)
 #endif /* CRS */
 
 #define __HAL_RCC_CAN1_IS_CLK_SLEEP_ENABLED()      (READ_BIT(RCC->APB1SMENR1, RCC_APB1SMENR1_CAN1SMEN) != RESET)
+
+#if defined(CAN2)
+#define __HAL_RCC_CAN2_IS_CLK_SLEEP_ENABLED()      (READ_BIT(RCC->APB1SMENR1, RCC_APB1SMENR1_CAN2SMEN) != RESET)
+#endif /* CAN2 */
 
 #if defined(USB)
 #define __HAL_RCC_USB_IS_CLK_SLEEP_ENABLED()       (READ_BIT(RCC->APB1SMENR1, RCC_APB1SMENR1_USBFSSMEN) != RESET)
@@ -2774,9 +3098,12 @@ typedef struct
 
 #define __HAL_RCC_LPUART1_IS_CLK_SLEEP_ENABLED()   (READ_BIT(RCC->APB1SMENR2, RCC_APB1SMENR2_LPUART1SMEN) != RESET)
 
+#if defined(SWPMI1)
 #define __HAL_RCC_SWPMI1_IS_CLK_SLEEP_ENABLED()    (READ_BIT(RCC->APB1SMENR2, RCC_APB1SMENR2_SWPMI1SMEN) != RESET)
+#endif /* SWPMI1 */
 
 #define __HAL_RCC_LPTIM2_IS_CLK_SLEEP_ENABLED()    (READ_BIT(RCC->APB1SMENR2, RCC_APB1SMENR2_LPTIM2SMEN) != RESET)
+
 
 #define __HAL_RCC_TIM2_IS_CLK_SLEEP_DISABLED()     (READ_BIT(RCC->APB1SMENR1, RCC_APB1SMENR1_TIM2SMEN) == RESET)
 
@@ -2834,11 +3161,19 @@ typedef struct
 
 #define __HAL_RCC_I2C3_IS_CLK_SLEEP_DISABLED()     (READ_BIT(RCC->APB1SMENR1, RCC_APB1SMENR1_I2C3SMEN) == RESET)
 
+#if defined(I2C4)
+#define __HAL_RCC_I2C4_IS_CLK_SLEEP_DISABLED()     (READ_BIT(RCC->APB1SMENR2, RCC_APB1SMENR2_I2C4SMEN) == RESET)
+#endif /* I2C4 */
+
 #if defined(CRS)
 #define __HAL_RCC_CRS_IS_CLK_SLEEP_DISABLED()      (READ_BIT(RCC->APB1SMENR1, RCC_APB1SMENR1_CRSSMEN) == RESET)
 #endif /* CRS */
 
 #define __HAL_RCC_CAN1_IS_CLK_SLEEP_DISABLED()     (READ_BIT(RCC->APB1SMENR1, RCC_APB1SMENR1_CAN1SMEN) == RESET)
+
+#if defined(CAN2)
+#define __HAL_RCC_CAN2_IS_CLK_SLEEP_DISABLED()     (READ_BIT(RCC->APB1SMENR1, RCC_APB1SMENR1_CAN2SMEN) == RESET)
+#endif /* CAN2 */
 
 #if defined(USB)
 #define __HAL_RCC_USB_IS_CLK_SLEEP_DISABLED()      (READ_BIT(RCC->APB1SMENR1, RCC_APB1SMENR1_USBFSSMEN) == RESET)
@@ -2854,7 +3189,9 @@ typedef struct
 
 #define __HAL_RCC_LPUART1_IS_CLK_SLEEP_DISABLED()  (READ_BIT(RCC->APB1SMENR2, RCC_APB1SMENR2_LPUART1SMEN) == RESET)
 
+#if defined(SWPMI1)
 #define __HAL_RCC_SWPMI1_IS_CLK_SLEEP_DISABLED()   (READ_BIT(RCC->APB1SMENR2, RCC_APB1SMENR2_SWPMI1SMEN) == RESET)
+#endif /* SWPMI1 */
 
 #define __HAL_RCC_LPTIM2_IS_CLK_SLEEP_DISABLED()   (READ_BIT(RCC->APB1SMENR2, RCC_APB1SMENR2_LPTIM2SMEN) == RESET)
 
@@ -2901,9 +3238,10 @@ typedef struct
 #define __HAL_RCC_SAI2_IS_CLK_SLEEP_ENABLED()      (READ_BIT(RCC->APB2SMENR, RCC_APB2SMENR_SAI2SMEN) != RESET)
 #endif /* SAI2 */
 
-#if defined(DFSDM_Filter0)
-#define __HAL_RCC_DFSDM_IS_CLK_SLEEP_ENABLED()     (READ_BIT(RCC->APB2SMENR, RCC_APB2SMENR_DFSDMSMEN) != RESET)
-#endif /* DFSDM_Filter0 */
+#if defined(DFSDM1_Filter0)
+#define __HAL_RCC_DFSDM1_IS_CLK_SLEEP_ENABLED()    (READ_BIT(RCC->APB2SMENR, RCC_APB2SMENR_DFSDM1SMEN) != RESET)
+#endif /* DFSDM1_Filter0 */
+
 
 #define __HAL_RCC_SYSCFG_IS_CLK_SLEEP_DISABLED()   (READ_BIT(RCC->APB2SMENR, RCC_APB2SMENR_SYSCFGSMEN) == RESET)
 
@@ -2935,9 +3273,9 @@ typedef struct
 #define __HAL_RCC_SAI2_IS_CLK_SLEEP_DISABLED()     (READ_BIT(RCC->APB2SMENR, RCC_APB2SMENR_SAI2SMEN) == RESET)
 #endif /* SAI2 */
 
-#if defined(DFSDM_Filter0)
-#define __HAL_RCC_DFSDM_IS_CLK_SLEEP_DISABLED()    (READ_BIT(RCC->APB2SMENR, RCC_APB2SMENR_DFSDMSMEN) == RESET)
-#endif /* DFSDM_Filter0 */
+#if defined(DFSDM1_Filter0)
+#define __HAL_RCC_DFSDM1_IS_CLK_SLEEP_DISABLED()   (READ_BIT(RCC->APB2SMENR, RCC_APB2SMENR_DFSDM1SMEN) == RESET)
+#endif /* DFSDM1_Filter0 */
 
 /**
   * @}
@@ -3006,7 +3344,7 @@ typedef struct
   *         and temperature that influence the frequency of the internal HSI RC.
   * @param  __HSICALIBRATIONVALUE__: specifies the calibration trimming value
   *         (default is RCC_HSICALIBRATION_DEFAULT).
-  *         This parameter must be a number between 0 and 31.
+  *         This parameter must be a number between 0 and 0x1F (STM32L43x/STM32L44x/STM32L47x/STM32L48x) or 0x7F (for other devices).
   * @retval None
   */
 #define __HAL_RCC_HSI_CALIBRATIONVALUE_ADJUST(__HSICALIBRATIONVALUE__) \
@@ -3087,9 +3425,9 @@ typedef struct
   *            @arg @ref RCC_MSIRANGE_2  MSI clock is around 400 KHz
   *            @arg @ref RCC_MSIRANGE_3  MSI clock is around 800 KHz
   *            @arg @ref RCC_MSIRANGE_4  MSI clock is around 1 MHz
-  *            @arg @ref RCC_MSIRANGE_5  MSI clock is around 2MHz
-  *            @arg @ref RCC_MSIRANGE_6  MSI clock is around 4MHz (default after Reset)
-  *            @arg @ref RCC_MSIRANGE_7  MSI clock is around 8  MHz
+  *            @arg @ref RCC_MSIRANGE_5  MSI clock is around 2 MHz
+  *            @arg @ref RCC_MSIRANGE_6  MSI clock is around 4 MHz (default after Reset)
+  *            @arg @ref RCC_MSIRANGE_7  MSI clock is around 8 MHz
   *            @arg @ref RCC_MSIRANGE_8  MSI clock is around 16 MHz
   *            @arg @ref RCC_MSIRANGE_9  MSI clock is around 24 MHz
   *            @arg @ref RCC_MSIRANGE_10  MSI clock is around 32 MHz
@@ -3108,9 +3446,9 @@ typedef struct
   * @param  __MSIRANGEVALUE__: specifies the MSI clock range.
   *         This parameter must be one of the following values:
   *            @arg @ref RCC_MSIRANGE_4  MSI clock is around 1 MHz
-  *            @arg @ref RCC_MSIRANGE_5  MSI clock is around 2MHz
-  *            @arg @ref RCC_MSIRANGE_6  MSI clock is around 4MHz (default after Reset)
-  *            @arg @ref RCC_MSIRANGE_7  MSI clock is around 8  MHz
+  *            @arg @ref RCC_MSIRANGE_5  MSI clock is around 2 MHz
+  *            @arg @ref RCC_MSIRANGE_6  MSI clock is around 4 MHz (default after Reset)
+  *            @arg @ref RCC_MSIRANGE_7  MSI clock is around 8 MHz
   * @retval None
   */
 #define __HAL_RCC_MSI_STANDBY_RANGE_CONFIG(__MSIRANGEVALUE__) \
@@ -3124,9 +3462,9 @@ typedef struct
   *            @arg @ref RCC_MSIRANGE_2  MSI clock is around 400 KHz
   *            @arg @ref RCC_MSIRANGE_3  MSI clock is around 800 KHz
   *            @arg @ref RCC_MSIRANGE_4  MSI clock is around 1 MHz
-  *            @arg @ref RCC_MSIRANGE_5  MSI clock is around 2MHz
-  *            @arg @ref RCC_MSIRANGE_6  MSI clock is around 4MHz (default after Reset)
-  *            @arg @ref RCC_MSIRANGE_7  MSI clock is around 8  MHz
+  *            @arg @ref RCC_MSIRANGE_5  MSI clock is around 2 MHz
+  *            @arg @ref RCC_MSIRANGE_6  MSI clock is around 4 MHz (default after Reset)
+  *            @arg @ref RCC_MSIRANGE_7  MSI clock is around 8 MHz
   *            @arg @ref RCC_MSIRANGE_8  MSI clock is around 16 MHz
   *            @arg @ref RCC_MSIRANGE_9  MSI clock is around 24 MHz
   *            @arg @ref RCC_MSIRANGE_10  MSI clock is around 32 MHz
@@ -3181,7 +3519,6 @@ typedef struct
                       }                                      \
                       else if((__STATE__) == RCC_HSE_BYPASS) \
                       {                                      \
-                        CLEAR_BIT(RCC->CR, RCC_CR_HSEON);    \
                         SET_BIT(RCC->CR, RCC_CR_HSEBYP);     \
                         SET_BIT(RCC->CR, RCC_CR_HSEON);      \
                       }                                      \
@@ -3218,14 +3555,8 @@ typedef struct
                       {                                        \
                         SET_BIT(RCC->BDCR, RCC_BDCR_LSEON);    \
                       }                                        \
-                      else if((__STATE__) == RCC_LSE_OFF)      \
-                      {                                        \
-                        CLEAR_BIT(RCC->BDCR, RCC_BDCR_LSEON);  \
-                        CLEAR_BIT(RCC->BDCR, RCC_BDCR_LSEBYP); \
-                      }                                        \
                       else if((__STATE__) == RCC_LSE_BYPASS)   \
                       {                                        \
-                        CLEAR_BIT(RCC->BDCR, RCC_BDCR_LSEON);  \
                         SET_BIT(RCC->BDCR, RCC_BDCR_LSEBYP);   \
                         SET_BIT(RCC->BDCR, RCC_BDCR_LSEON);    \
                       }                                        \
@@ -3262,6 +3593,7 @@ typedef struct
   *
   * @param  __RTC_CLKSOURCE__: specifies the RTC clock source.
   *         This parameter can be one of the following values:
+  *            @arg @ref RCC_RTCCLKSOURCE_NO_CLK  No clock selected as RTC clock.
   *            @arg @ref RCC_RTCCLKSOURCE_LSE  LSE selected as RTC clock.
   *            @arg @ref RCC_RTCCLKSOURCE_LSI  LSI selected as RTC clock.
   *            @arg @ref RCC_RTCCLKSOURCE_HSE_DIV32  HSE clock divided by 32 selected
@@ -3280,6 +3612,7 @@ typedef struct
 
 /** @brief  Macro to get the RTC clock source.
   * @retval The returned value can be one of the following:
+  *            @arg @ref RCC_RTCCLKSOURCE_NO_CLK  No clock selected as RTC clock.
   *            @arg @ref RCC_RTCCLKSOURCE_LSE  LSE selected as RTC clock.
   *            @arg @ref RCC_RTCCLKSOURCE_LSI  LSI selected as RTC clock.
   *            @arg @ref RCC_RTCCLKSOURCE_HSE_DIV32  HSE clock divided by 32 selected
@@ -3313,7 +3646,7 @@ typedef struct
 #define __HAL_RCC_PLL_PLLSOURCE_CONFIG(__PLLSOURCE__) \
                   MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_PLLSRC, (__PLLSOURCE__))
 
-/** @brief  Macro to configure the PLL multiplication factor.
+/** @brief  Macro to configure the PLL source division factor M.
   * @note   This function must be used only when the main PLL is disabled.
   * @param  __PLLM__: specifies the division factor for PLL VCO input clock
   *         This parameter must be a number between Min_Data = 1 and Max_Data = 8.
@@ -3486,6 +3819,12 @@ typedef struct
   @if STM32L443xx
   *            @arg @ref RCC_MCO1SOURCE_HSI48  HSI48 clock selected as MCO source for devices with HSI48
   @endif
+  @if STM32L462xx
+  *            @arg @ref RCC_MCO1SOURCE_HSI48  HSI48 clock selected as MCO source for devices with HSI48
+  @endif
+  @if STM32L4A6xx
+  *            @arg @ref RCC_MCO1SOURCE_HSI48  HSI48 clock selected as MCO source for devices with HSI48
+  @endif
   * @param  __MCODIV__ specifies the MCO clock prescaler.
   *          This parameter can be one of the following values:
   *            @arg @ref RCC_MCODIV_1   MCO clock source is divided by 1
@@ -3518,6 +3857,12 @@ typedef struct
   @if STM32L443xx
   *            @arg @ref RCC_IT_HSI48RDY  HSI48 ready interrupt for devices with HSI48
   @endif
+  @if STM32L462xx
+  *            @arg @ref RCC_IT_HSI48RDY  HSI48 ready interrupt for devices with HSI48
+  @endif
+  @if STM32L4A6xx
+  *            @arg @ref RCC_IT_HSI48RDY  HSI48 ready interrupt for devices with HSI48
+  @endif
   * @retval None
   */
 #define __HAL_RCC_ENABLE_IT(__INTERRUPT__) SET_BIT(RCC->CIER, (__INTERRUPT__))
@@ -3536,6 +3881,12 @@ typedef struct
   *            @arg @ref RCC_IT_PLLSAI2RDY  PLLSAI2 ready interrupt for devices with PLLSAI2
   *            @arg @ref RCC_IT_LSECSS  LSE Clock security system interrupt
   @if STM32L443xx
+  *            @arg @ref RCC_IT_HSI48RDY  HSI48 ready interrupt for devices with HSI48
+  @endif
+  @if STM32L462xx
+  *            @arg @ref RCC_IT_HSI48RDY  HSI48 ready interrupt for devices with HSI48
+  @endif
+  @if STM32L4A6xx
   *            @arg @ref RCC_IT_HSI48RDY  HSI48 ready interrupt for devices with HSI48
   @endif
   * @retval None
@@ -3559,6 +3910,12 @@ typedef struct
   @if STM32L443xx
   *            @arg @ref RCC_IT_HSI48RDY  HSI48 ready interrupt for devices with HSI48
   @endif
+  @if STM32L462xx
+  *            @arg @ref RCC_IT_HSI48RDY  HSI48 ready interrupt for devices with HSI48
+  @endif
+  @if STM32L4A6xx
+  *            @arg @ref RCC_IT_HSI48RDY  HSI48 ready interrupt for devices with HSI48
+  @endif
   * @retval None
   */
 #define __HAL_RCC_CLEAR_IT(__INTERRUPT__) (RCC->CICR = (__INTERRUPT__))
@@ -3577,6 +3934,12 @@ typedef struct
   *            @arg @ref RCC_IT_CSS  HSE Clock security system interrupt
   *            @arg @ref RCC_IT_LSECSS  LSE Clock security system interrupt
   @if STM32L443xx
+  *            @arg @ref RCC_IT_HSI48RDY HSI48 ready interrupt for devices with HSI48
+  @endif
+  @if STM32L462xx
+  *            @arg @ref RCC_IT_HSI48RDY HSI48 ready interrupt for devices with HSI48
+  @endif
+  @if STM32L4A6xx
   *            @arg @ref RCC_IT_HSI48RDY HSI48 ready interrupt for devices with HSI48
   @endif
   * @retval The new state of __INTERRUPT__ (TRUE or FALSE).
@@ -3600,6 +3963,12 @@ typedef struct
   *            @arg @ref RCC_FLAG_PLLSAI1RDY  PLLSAI1 clock ready
   *            @arg @ref RCC_FLAG_PLLSAI2RDY  PLLSAI2 clock ready for devices with PLLSAI2
   @if STM32L443xx
+  *            @arg @ref RCC_FLAG_HSI48RDY  HSI48 clock ready for devices with HSI48
+  @endif
+  @if STM32L462xx
+  *            @arg @ref RCC_FLAG_HSI48RDY  HSI48 clock ready for devices with HSI48
+  @endif
+  @if STM32L4A6xx
   *            @arg @ref RCC_FLAG_HSI48RDY  HSI48 clock ready for devices with HSI48
   @endif
   *            @arg @ref RCC_FLAG_LSERDY  LSE oscillator clock ready
@@ -3686,7 +4055,7 @@ typedef struct
 
 #define IS_RCC_HSI(__HSI__)  (((__HSI__) == RCC_HSI_OFF) || ((__HSI__) == RCC_HSI_ON))
 
-#define IS_RCC_HSI_CALIBRATION_VALUE(__VALUE__) ((__VALUE__) <= (uint32_t)31U)
+#define IS_RCC_HSI_CALIBRATION_VALUE(__VALUE__) ((__VALUE__) <= (uint32_t)( RCC_ICSCR_HSITRIM  >>  POSITION_VAL(RCC_ICSCR_HSITRIM)))
 
 #define IS_RCC_LSI(__LSI__)  (((__LSI__) == RCC_LSI_OFF) || ((__LSI__) == RCC_LSI_ON))
 
@@ -3706,7 +4075,7 @@ typedef struct
                                       ((__SOURCE__) == RCC_PLLSOURCE_HSI)  || \
                                       ((__SOURCE__) == RCC_PLLSOURCE_HSE))
 
-#define IS_RCC_PLLM_VALUE(__VALUE__) ((__VALUE__) <= 8U)
+#define IS_RCC_PLLM_VALUE(__VALUE__) ((1U <= (__VALUE__)) && ((__VALUE__) <= 8U))
 
 #define IS_RCC_PLLN_VALUE(__VALUE__) ((8U <= (__VALUE__)) && ((__VALUE__) <= 86U))
 
@@ -3728,7 +4097,7 @@ typedef struct
                                                  (((__VALUE__) & ~(RCC_PLLSAI1_SAI1CLK|RCC_PLLSAI1_48M2CLK|RCC_PLLSAI1_ADC1CLK)) == 0U))
 
 #if defined(RCC_PLLSAI2_SUPPORT)
-#define IS_RCC_PLLSAI2CLOCKOUT_VALUE(__VALUE__) (((((__VALUE__) & RCC_PLLSAI2_SAI2CLK) == RCC_PLLSAI2_SAI2CLK ) || \
+#define IS_RCC_PLLSAI2CLOCKOUT_VALUE(__VALUE__) (((((__VALUE__) & RCC_PLLSAI2_SAI2CLK) == RCC_PLLSAI2_SAI2CLK)  || \
                                                   (((__VALUE__) & RCC_PLLSAI2_ADC2CLK) == RCC_PLLSAI2_ADC2CLK)) && \
                                                  (((__VALUE__) & ~(RCC_PLLSAI2_SAI2CLK|RCC_PLLSAI2_ADC2CLK)) == 0U))   
 #endif /* RCC_PLLSAI2_SUPPORT */
@@ -3768,8 +4137,9 @@ typedef struct
                                ((__PCLK__) == RCC_HCLK_DIV4) || ((__PCLK__) == RCC_HCLK_DIV8) || \
                                ((__PCLK__) == RCC_HCLK_DIV16))
 
-#define IS_RCC_RTCCLKSOURCE(__SOURCE__) (((__SOURCE__) == RCC_RTCCLKSOURCE_LSE) || \
-                                         ((__SOURCE__) == RCC_RTCCLKSOURCE_LSI) || \
+#define IS_RCC_RTCCLKSOURCE(__SOURCE__) (((__SOURCE__) == RCC_RTCCLKSOURCE_NO_CLK) || \
+                                         ((__SOURCE__) == RCC_RTCCLKSOURCE_LSE)    || \
+                                         ((__SOURCE__) == RCC_RTCCLKSOURCE_LSI)    || \
                                          ((__SOURCE__) == RCC_RTCCLKSOURCE_HSE_DIV32))
 
 #define IS_RCC_MCO(__MCOX__) ((__MCOX__) == RCC_MCO1)

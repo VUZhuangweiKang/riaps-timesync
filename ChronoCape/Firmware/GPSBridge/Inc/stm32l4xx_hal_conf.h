@@ -5,7 +5,7 @@
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; COPYRIGHT(c) 2016 STMicroelectronics</center></h2>
+  * <h2><center>&copy; COPYRIGHT(c) 2017 STMicroelectronics</center></h2>
   *
   * Redistribution and use in source and binary forms, with or without modification,
   * are permitted provided that the following conditions are met:
@@ -40,8 +40,7 @@
  extern "C" {
 #endif
 
-#include "mxconstants.h" 
-
+#include "main.h" 
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 
@@ -51,40 +50,44 @@
   */
 
 #define HAL_MODULE_ENABLED  
-//#define HAL_ADC_MODULE_ENABLED   
-//#define HAL_CAN_MODULE_ENABLED   
-//#define HAL_COMP_MODULE_ENABLED   
-//#define HAL_CRC_MODULE_ENABLED   
-//#define HAL_CRYP_MODULE_ENABLED   
-//#define HAL_DAC_MODULE_ENABLED   
-//#define HAL_DFSDM_MODULE_ENABLED   
-//#define HAL_FIREWALL_MODULE_ENABLED   
-//#define HAL_HCD_MODULE_ENABLED   
-//#define HAL_I2S_MODULE_ENABLED   
-//#define HAL_IRDA_MODULE_ENABLED   
-//#define HAL_IWDG_MODULE_ENABLED   
-//#define HAL_LCD_MODULE_ENABLED   
-//#define HAL_LPTIM_MODULE_ENABLED   
-//#define HAL_NAND_MODULE_ENABLED   
-//#define HAL_NOR_MODULE_ENABLED   
-//#define HAL_OPAMP_MODULE_ENABLED   
+/*#define HAL_ADC_MODULE_ENABLED   */
+/*#define HAL_CRYP_MODULE_ENABLED   */
+/*#define HAL_CAN_MODULE_ENABLED   */
+/*#define HAL_COMP_MODULE_ENABLED   */
+/*#define HAL_CRC_MODULE_ENABLED   */
+/*#define HAL_CRYP_MODULE_ENABLED   */
+/*#define HAL_DAC_MODULE_ENABLED   */
+/*#define HAL_DCMI_MODULE_ENABLED   */
+/*#define HAL_DMA2D_MODULE_ENABLED   */
+/*#define HAL_DFSDM_MODULE_ENABLED   */
+/*#define HAL_FIREWALL_MODULE_ENABLED   */
+/*#define HAL_HCD_MODULE_ENABLED   */
+/*#define HAL_HASH_MODULE_ENABLED   */
+/*#define HAL_I2S_MODULE_ENABLED   */
+/*#define HAL_IRDA_MODULE_ENABLED   */
+/*#define HAL_IWDG_MODULE_ENABLED   */
+/*#define HAL_LCD_MODULE_ENABLED   */
+/*#define HAL_LPTIM_MODULE_ENABLED   */
+/*#define HAL_NAND_MODULE_ENABLED   */
+/*#define HAL_NOR_MODULE_ENABLED   */
+/*#define HAL_OPAMP_MODULE_ENABLED   */
 #define HAL_PCD_MODULE_ENABLED
-//#define HAL_QSPI_MODULE_ENABLED   
-//#define HAL_QSPI_MODULE_ENABLED   
-//#define HAL_RNG_MODULE_ENABLED   
-//#define HAL_RTC_MODULE_ENABLED   
-//#define HAL_SAI_MODULE_ENABLED   
-//#define HAL_SD_MODULE_ENABLED   
-//#define HAL_SMBUS_MODULE_ENABLED   
-//#define HAL_SMARTCARD_MODULE_ENABLED   
-//#define HAL_SPI_MODULE_ENABLED   
-//#define HAL_SRAM_MODULE_ENABLED   
-//#define HAL_SWPMI_MODULE_ENABLED   
+/*#define HAL_QSPI_MODULE_ENABLED   */
+/*#define HAL_QSPI_MODULE_ENABLED   */
+/*#define HAL_RNG_MODULE_ENABLED   */
+/*#define HAL_RTC_MODULE_ENABLED   */
+/*#define HAL_SAI_MODULE_ENABLED   */
+/*#define HAL_SD_MODULE_ENABLED   */
+/*#define HAL_SMBUS_MODULE_ENABLED   */
+/*#define HAL_SMARTCARD_MODULE_ENABLED   */
+/*#define HAL_SPI_MODULE_ENABLED   */
+/*#define HAL_SRAM_MODULE_ENABLED   */
+/*#define HAL_SWPMI_MODULE_ENABLED   */
 #define HAL_TIM_MODULE_ENABLED
-//#define HAL_TSC_MODULE_ENABLED   
+/*#define HAL_TSC_MODULE_ENABLED   */
 #define HAL_UART_MODULE_ENABLED
-//#define HAL_USART_MODULE_ENABLED   
-//#define HAL_WWDG_MODULE_ENABLED   
+/*#define HAL_USART_MODULE_ENABLED   */
+/*#define HAL_WWDG_MODULE_ENABLED   */
 #define HAL_GPIO_MODULE_ENABLED
 #define HAL_I2C_MODULE_ENABLED
 #define HAL_DMA_MODULE_ENABLED
@@ -153,7 +156,7 @@
 #endif /* LSE_VALUE */
 
 #if !defined  (LSE_STARTUP_TIMEOUT)
-  #define LSE_STARTUP_TIMEOUT    ((uint32_t)5000)   /*!< Time out for LSE start up, in ms */
+  #define LSE_STARTUP_TIMEOUT    ((uint32_t)5000U)   /*!< Time out for LSE start up, in ms */
 #endif /* HSE_STARTUP_TIMEOUT */
 
 /**
@@ -194,7 +197,16 @@
   * @brief Uncomment the line below to expanse the "assert_param" macro in the 
   *        HAL drivers code
   */
-/* #define USE_FULL_ASSERT    1 */
+/* #define USE_FULL_ASSERT    1U */
+
+/* ################## SPI peripheral configuration ########################## */
+
+/* CRC FEATURE: Use to activate CRC feature inside HAL SPI Driver
+ * Activated: CRC code is present inside driver
+ * Deactivated: CRC code cleaned from driver
+ */
+
+#define USE_SPI_CRC                   0U
 
 /* Includes ------------------------------------------------------------------*/
 /**
@@ -245,13 +257,25 @@
   #include "stm32l4xx_hal_dac.h"
 #endif /* HAL_DAC_MODULE_ENABLED */
 
+#ifdef HAL_DCMI_MODULE_ENABLED
+  #include "stm32l4xx_hal_dcmi.h"
+#endif /* HAL_DCMI_MODULE_ENABLED */
+
+#ifdef HAL_DMA2D_MODULE_ENABLED
+  #include "stm32l4xx_hal_dma2d.h"
+#endif /* HAL_DMA2D_MODULE_ENABLED */
+
 #ifdef HAL_FIREWALL_MODULE_ENABLED
   #include "stm32l4xx_hal_firewall.h"
-#endif /* HAL_FLASH_MODULE_ENABLED */
+#endif /* HAL_FIREWALL_MODULE_ENABLED */
 
 #ifdef HAL_FLASH_MODULE_ENABLED
   #include "stm32l4xx_hal_flash.h"
 #endif /* HAL_FLASH_MODULE_ENABLED */
+
+#ifdef HAL_HASH_MODULE_ENABLED
+  #include "stm32l4xx_hal_hash.h"
+#endif /* HAL_HASH_MODULE_ENABLED */
 
 #ifdef HAL_SRAM_MODULE_ENABLED
   #include "stm32l4xx_hal_sram.h"
@@ -278,11 +302,11 @@
 #endif /* HAL_LCD_MODULE_ENABLED */
 
 #ifdef HAL_LPTIM_MODULE_ENABLED
-#include "stm32l4xx_hal_lptim.h"
+  #include "stm32l4xx_hal_lptim.h"
 #endif /* HAL_LPTIM_MODULE_ENABLED */
 
 #ifdef HAL_OPAMP_MODULE_ENABLED
-#include "stm32l4xx_hal_opamp.h"
+  #include "stm32l4xx_hal_opamp.h"
 #endif /* HAL_OPAMP_MODULE_ENABLED */
 
 #ifdef HAL_PWR_MODULE_ENABLED
@@ -367,11 +391,11 @@
   *         If expr is true, it returns no value.
   * @retval None
   */
-  #define assert_param(expr) ((expr) ? (void)0 : assert_failed((uint8_t *)__FILE__, __LINE__))
+  #define assert_param(expr) ((expr) ? (void)0U : assert_failed((uint8_t *)__FILE__, __LINE__))
 /* Exported functions ------------------------------------------------------- */
   void assert_failed(uint8_t* file, uint32_t line);
 #else
-  #define assert_param(expr) ((void)0)
+  #define assert_param(expr) ((void)0U)
 #endif /* USE_FULL_ASSERT */
 
 #ifdef __cplusplus
