@@ -64,7 +64,7 @@ int main(int argc, char* argv[])
       exit(-1);
     }
     libsoc_gpio_set_level(ppm_output, HIGH);
-    usleep(10);
+    //usleep(10);
     libsoc_gpio_set_level(ppm_output, LOW);
     printf("."); fflush(stdout);
   }
