@@ -15,7 +15,7 @@ env:
   - arch=amd64
   - arch=armhf
 before_script:
-- sudo pip3 install --upgrade pip setuptools wheel
+- pip3 install --user travis --upgrade pip setuptools wheel
 script:
 - mkdir build-$arch
 - cd build-$arch
