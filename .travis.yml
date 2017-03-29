@@ -7,6 +7,7 @@ addons:
     - build-essential
     - g++-arm-linux-gnueabihf
     - cmake
+    - python3
 env:
   matrix:
   - arch=amd64
@@ -17,16 +18,25 @@ script:
 - cmake -Darch=$arch  ..
 - make VERBOSE=1
 - make package
+- cd ${TRAVIS_BUILD_DIR}/python
+- python3 setup.py bdist_wheel -d ${TRAVIS_BUILD_DIR}/build/
+- cd ${TRAVIS_BUILD_DIR}/config
+- tar zxvf ${TRAVIS_BUILD_DIR}/build/riaps-timesync-config.tar.gz .
 before_deploy:
-  - export RELEASE_PKG_FILE=$(ls *.deb)
+  - export RELEASE_PKG_FILE=$(ls build/*.deb)
+  - export RELEASE_WHL_FILE=$(ls build/*.whl)
+  - export RELEASE_TGZ_FILE=$(ls build/*.tar.gz)
   - echo "deploying $RELEASE_PKG_FILE to GitHub releases"
 deploy:
   provider: releases
   overwrite: true
   api_key:
     secure: QJPGySjeYitZKQIcnSk8dgDam7w+YVmcL9zZO73a6oi8NHokXHSK5xBCa7tmxBeuONmrPtRuidOzG5GWGY/sKB6C8/4uyaKSbXxBbBPyv/UWNx+Wu8DdK9Lgx+3IJNZH7MCF31s8+yzdLSJn8UQ31BTfqYbhq/d/iEe+vn8r/1KSpndbJ1TSp0sAJKsB3qU9GYZIlFfr+SYibc6uDXQSi9uf+p3X4BlzBH/Oe5Cic0hB24OdXgsWq7ctO45VD20PBuaWLS7zURhygKgovpDMFOsi+b2edT51evXx8nKk+rLNWlkHB4mQNSweHEpp0o8UwBM1U0Q6OcbUqIMzjqQQiAYZAM5Yc+2z2yrK2+8I1x0PE1E4JCCCVX7oFXEf+mCC3u/QF3lpHXjxro5XUwN8gU0uqWHMpxG6HQvc+KzcEJgTSbvw4uH83NxnUerXio7B6mG+McsaLQvDXUKQwYqzkw4Lr9JuaeqE1vfM36eyBMD1KCGIk9oC8uTpvn/OPbZVaBIEVJ0lEoQE/lj8rJtRAI0UOzMb1Lql20Dp0F+baFNavB1Vjhm779lAUh/0Io7gA0aAqiBXAANiWZjeUvAlKfT+FkAYnxe8nNK2DD7bJx+Dw+qfWAjSZMgdnB3CVslwuKbiCFgI50pSKZjh3YTRJ1D+0zbc9+s5NB2ySP7F5Kg=
-  file_glob: true
-  file: "${RELEASE_PKG_FILE}"
+  file_glob: true	
+  file: 
+    - "${RELEASE_PKG_FILE}"
+    - "${RELEASE_WHL_FILE}"
+    - "${RELEASE_TGZ_FILE}"
   skip_cleanup: true
   on:
     tags: true
