@@ -24,7 +24,7 @@ script:
 - cd ${TRAVIS_BUILD_DIR}/python
 - python3 setup.py bdist_wheel -d ${TRAVIS_BUILD_DIR}/build/
 - cd ${TRAVIS_BUILD_DIR}/config
-- tar zcvf ${TRAVIS_BUILD_DIR}/build/riaps-timesync-config.tar.gz .
+- tar zcvf "${TRAVIS_BUILD_DIR}/build/riaps-timesync-config.tar.gz" .
 before_deploy:
   - export RELEASE_PKG_FILE=$(ls build/*.deb)
   - export RELEASE_WHL_FILE=$(ls build/*.whl)
