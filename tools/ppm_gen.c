@@ -19,7 +19,7 @@
 // P8_19 = 22 (EHRPWM2A)
 #define PPM_OUTPUT  22
 
-#define BUSY_WAIT_INTERVAL  1000000L # nanoseconds
+#define BUSY_WAIT_INTERVAL  1000000L // nanoseconds
 
 void setup_scheduler()
 {
@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
         perror("clock_gettime failed:");
         exit(-1);
       }
-    } while (t2.tv_sec <= t1.tv_sec)
+    } while (t2.tv_sec <= t1.tv_sec);
 
     libsoc_gpio_set_level(ppm_output, HIGH);
     //usleep(10);
