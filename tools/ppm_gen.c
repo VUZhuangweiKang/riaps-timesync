@@ -19,6 +19,8 @@
 // P8_19 = 22 (EHRPWM2A)
 #define PPM_OUTPUT  22
 
+#define BUSY_WAIT_INTERVAL  1000000 # nanoseconds
+
 void setup_scheduler()
 {
   struct sched_param schedp;
@@ -56,8 +58,15 @@ int main(int argc, char* argv[])
        perror("clock_gettime failed:");
        exit(-1);
     }
+
+    if (t.tv_nsec > 800000000) {
+      printf("too close to second boundary, skipping.\n");
+      t.tv_sec += 1;
+    }
+
     t.tv_sec += 1;
     t.tv_nsec = 0;
+
 
     if (clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &t, NULL)) {
       perror("clock_nanosleep failed:");
