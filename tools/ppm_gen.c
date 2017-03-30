@@ -19,7 +19,7 @@
 // P8_19 = 22 (EHRPWM2A)
 #define PPM_OUTPUT  22
 
-#define BUSY_WAIT_INTERVAL  1000000 # nanoseconds
+#define BUSY_WAIT_INTERVAL  1000000L # nanoseconds
 
 void setup_scheduler()
 {
@@ -36,7 +36,7 @@ void setup_scheduler()
 int main(int argc, char* argv[])
 {
   gpio *ppm_output;
-  struct timespec t;
+  struct timespec t1, t2;
 
   ppm_output = libsoc_gpio_request(PPM_OUTPUT, LS_SHARED);
   if (!ppm_output) {
@@ -54,28 +54,36 @@ int main(int argc, char* argv[])
   setup_scheduler();
 
   while (1) {
-     if (clock_gettime(CLOCK_REALTIME, &t)) {
+    if (clock_gettime(CLOCK_REALTIME, &t1)) {
        perror("clock_gettime failed:");
        exit(-1);
     }
 
-    if (t.tv_nsec > 800000000) {
+    if (t1.tv_nsec > 800000000L) {
       printf("too close to second boundary, skipping.\n");
-      t.tv_sec += 1;
+      t1.tv_sec += 1;
     }
 
-    t.tv_sec += 1;
-    t.tv_nsec = 0;
+    t1.tv_nsec = 1000000000L - BUSY_WAIT_INTERVAL;
 
-
-    if (clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &t, NULL)) {
+    // long wait by timer / blocking
+    if (clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &t1, NULL)) {
       perror("clock_nanosleep failed:");
       exit(-1);
     }
+
+    // busy wait for increased accuracy
+    do {
+      if (clock_gettime(CLOCK_REALTIME, &t2)) {
+        perror("clock_gettime failed:");
+        exit(-1);
+      }
+    } while (t2.tv_sec <= t1.tv_sec)
+
     libsoc_gpio_set_level(ppm_output, HIGH);
     //usleep(10);
     libsoc_gpio_set_level(ppm_output, LOW);
-    printf("."); fflush(stdout);
+    printf("%lld.%.9ld\n", (long long)t2.tv_sec, t2.tv_nsec); // fflush(stdout);
   }
 
   if (ppm_output)
