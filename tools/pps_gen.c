@@ -1,11 +1,12 @@
 /*
   pps-gen - generate a PPS signal on a GPIO
 
-  The PPS signal is aligned to the second boundary (system clock).
+  The PPS signal is aligned halfway between second boundaries (system clock).
+  The halfway point is selected to minimize interference with the GPS PPS timestamping.
   The PPS signal is generated from software for testing:
     - global timesync
     - task release jitter (although, the current implementation
-      tries to minimize this effect
+      tries to minimize this effect)
 
   Copyright 2017, Peter Volgyesi, Vanderbilt University
 */
@@ -37,9 +38,7 @@ void setup_scheduler()
 int main(int argc, char* argv[])
 {
   gpio *pps_output;
-  struct timespec t1, t2;
-  struct timespec dbg[5];
-  int idbg;
+  struct timespec t;
 
   pps_output = libsoc_gpio_request(PPS_OUTPUT, LS_SHARED);
   if (!pps_output) {
@@ -57,47 +56,41 @@ int main(int argc, char* argv[])
   setup_scheduler();
 
   while (1) {
-    if (clock_gettime(CLOCK_REALTIME, &t1)) {
+    if (clock_gettime(CLOCK_REALTIME, &t)) {
        perror("clock_gettime failed:");
        exit(-1);
     }
 
-    if (t1.tv_nsec > 800000000L) {
-      printf("too close to second boundary, skipping.\n");
-      t1.tv_sec += 1;
+    if (t.tv_nsec > 500000000L) {
+      t.tv_sec += 1;
+    }
+    else if (t.tv_nsec > 400000000L) {
+      printf("too close to epoch, skipping one second.\n");
+      t.tv_sec += 1;
     }
 
-    t1.tv_nsec = 1000000000L - BUSY_WAIT_INTERVAL;
+    t.tv_nsec = 500000000L - BUSY_WAIT_INTERVAL;
 
     // long wait by timer / blocking
-    if (clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &t1, NULL)) {
+    if (clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &t, NULL)) {
       perror("clock_nanosleep failed:");
       exit(-1);
     }
 
     // busy wait for increased accuracy (approx 2us accuracy on BBB)
-    idbg = 0;
     do {
-      if (clock_gettime(CLOCK_REALTIME, &t2)) {
+      if (clock_gettime(CLOCK_REALTIME, &t)) {
         perror("clock_gettime failed:");
         exit(-1);
       }
-      dbg[idbg] = t2; idbg = (idbg + 1) % 5;
-    } while (t2.tv_sec <= t1.tv_sec);
+    } while (t.tv_nsec <= 500000000L);
 
     libsoc_gpio_set_level(pps_output, HIGH);
     //usleep(10);
     libsoc_gpio_set_level(pps_output, LOW);
 
-    //printf("%lld.%.9ld\n", (long long)t2.tv_sec, t2.tv_nsec); // fflush(stdout);
-    printf("%ld ns\n", t2.tv_nsec); // fflush(stdout);
-    for (int i = 0; i < 5; i++) {
-      long nsec = dbg[(idbg + i) % 5].tv_nsec;
-      if (nsec > 500000000) {
-        nsec = 1000000000 - nsec;
-      }
-      printf("\t%ld ns\n", nsec); 
-    }
+    //printf("%lld.%.9ld\n", (long long)t.tv_sec, t.tv_nsec); // fflush(stdout);
+    printf("%ld ns\n", t.tv_nsec); // fflush(stdout);
   }
 
   if (pps_output)
