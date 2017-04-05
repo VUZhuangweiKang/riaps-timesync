@@ -1,7 +1,7 @@
 SRC = $(wildcard *.c)
 BIN = $(patsubst %.c,%,$(SRC))
 
-LDLIBS += -lsoc
+LDLIBS += -lsoc -lm
 CFLAGS += -Wall
 
 all : $(BIN)
