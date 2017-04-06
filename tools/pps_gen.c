@@ -20,8 +20,8 @@
 
 #define USE_MMAP
 
+#define PHASE 999000000L // nanoseconds
 #define BUSY_WAIT_INTERVAL  1000000L // nanoseconds
-#define PHASE 500000000L // nanoseconds
 
 // PPS OUTPUT (GPS EXTINT on ChronoCape): P8_19 = GPIO0_22 (EHRPWM2A)
 
@@ -125,9 +125,14 @@ void scheduler_setup()
   }
 }
 
+long ns_diff(const struct timespec *t1, const struct timespec *t2)
+{
+  return t1->tv_nsec - t2->tv_nsec + (t1->tv_sec - t2->tv_sec) * 1000000000L;
+}
+
 int main(int argc, char* argv[])
 {
-  struct timespec t, t2;
+  struct timespec t, t_epoch_guard, t_epoch, t_asserted;
 
   gpio_setup();
   scheduler_setup();
@@ -138,18 +143,27 @@ int main(int argc, char* argv[])
        exit(-1);
     }
 
+    t_epoch.tv_sec = t.tv_sec;
+    t_epoch.tv_nsec = PHASE;
     if (t.tv_nsec > PHASE) {
-      t.tv_sec += 1;
-    }
-    else if (t.tv_nsec > (PHASE - 2 * BUSY_WAIT_INTERVAL)) {
-      printf("too close to epoch, skipping one second.\n");
-      t.tv_sec += 1;
+      t_epoch.tv_sec += 1;
     }
 
-    t.tv_nsec = PHASE - BUSY_WAIT_INTERVAL;
+    t_epoch_guard.tv_sec = t_epoch.tv_sec;
+    t_epoch_guard.tv_nsec = t_epoch.tv_nsec - BUSY_WAIT_INTERVAL;
+    if (t_epoch_guard.tv_nsec < 0) {
+      t_epoch_guard.tv_sec -= 1;
+      t_epoch_guard.tv_nsec += 1000000000L;
+    }
+    if (ns_diff(&t_epoch_guard, &t) < 0)
+    {
+      printf("too close to epoch, skipping one second.\n");
+      t_epoch_guard.tv_sec += 1;
+      t_epoch.tv_sec += 1;
+    }
 
     // long wait by timer / blocking
-    if (clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &t, NULL)) {
+    if (clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &t_epoch_guard, NULL)) {
       perror("clock_nanosleep failed:");
       exit(-1);
     }
@@ -160,16 +174,18 @@ int main(int argc, char* argv[])
         perror("clock_gettime failed:");
         exit(-1);
       }
-    } while (t.tv_nsec <= PHASE);
+    } while (ns_diff(&t, &t_epoch) < 0);
 
     gpio_assert();
-    if (clock_gettime(CLOCK_REALTIME, &t2)) {
+    if (clock_gettime(CLOCK_REALTIME, &t_asserted)) {
         perror("clock_gettime failed:");
         exit(-1);
     }
     //usleep(10);
     gpio_deassert();
 
-    printf("%lld.%.9ld [%ld...%ld ns]\n", (long long)t.tv_sec, t.tv_nsec, (t.tv_nsec - PHASE), (t2.tv_nsec - PHASE)); 
+    printf("%lld.%.9ld [%ld...%ld ns]\n", 
+             (long long)t.tv_sec, t.tv_nsec, 
+              ns_diff(&t, &t_epoch), ns_diff(&t_asserted, &t_epoch)); 
   }
 }
