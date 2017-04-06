@@ -85,7 +85,7 @@ int main(int argc, char* argv[])
       }
     } while (t.tv_nsec <= 500000000L);
 
-    libsoc_gpio_set_level(pps_output, HIGH);
+    libsoc_gpio_set_level(pps_output, HIGH); // might take 10 us
     //usleep(10);
     libsoc_gpio_set_level(pps_output, LOW);
 
