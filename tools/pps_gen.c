@@ -20,7 +20,7 @@
 
 #define USE_MMAP
 
-#define PHASE 999000000L // nanoseconds
+#define PHASE 500000000L // nanoseconds
 #define BUSY_WAIT_INTERVAL  1000000L // nanoseconds
 
 // PPS OUTPUT (GPS EXTINT on ChronoCape): P8_19 = GPIO0_22 (EHRPWM2A)
