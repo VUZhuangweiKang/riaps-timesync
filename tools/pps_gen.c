@@ -16,15 +16,104 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <sched.h>
+#include <time.h>
 
-// P8_19 = GPIO0_22 (EHRPWM2A)
-#define PPS_OUTPUT  22
+#define USE_MMAP
+
 #define BUSY_WAIT_INTERVAL  1000000L // nanoseconds
 #define PHASE 500000000L // nanoseconds
 
-#include <libsoc_gpio.h>
+// PPS OUTPUT (GPS EXTINT on ChronoCape): P8_19 = GPIO0_22 (EHRPWM2A)
 
-void setup_scheduler()
+#ifdef USE_MMAP
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+
+#define PPS_PIN          (1<<22)
+#define GPIO0_START_ADDR (0x44E07000)
+#define GPIO0_END_ADDR   (0x44E07FFF)
+#define GPIO0_SIZE       (GPIO0_END_ADDR - GPIO0_START_ADDR)
+#define GPIO_OE          (0x134)
+#define GPIO_SETDATAOUT  (0x194)
+#define GPIO_CLEARDATAOUT (0x190)
+
+volatile unsigned int *gpio_setdataout_addr = NULL;
+volatile unsigned int *gpio_cleardataout_addr = NULL;
+
+void gpio_setup()
+{
+  volatile void *gpio_addr;
+  volatile unsigned int *gpio_oe_addr;
+
+  int fd;
+
+  fd = open("/dev/mem", O_RDWR);
+  if (fd < 0) {
+    perror("unable to open /dev/mem:");
+    exit(-1);
+  }
+  gpio_addr = mmap(0, GPIO0_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, 
+                   fd, GPIO0_START_ADDR);
+  if (gpio_addr == MAP_FAILED) {
+    perror("mmap failed:");
+    exit(-1);
+  }
+  gpio_oe_addr = gpio_addr + GPIO_OE;
+  gpio_setdataout_addr = gpio_addr + GPIO_SETDATAOUT;
+  gpio_cleardataout_addr = gpio_addr + GPIO_CLEARDATAOUT; 
+
+  *gpio_oe_addr &= (0xFFFFFFFF - PPS_PIN);
+}
+
+static inline void gpio_assert()
+{
+  *gpio_setdataout_addr= PPS_PIN;
+}
+
+static inline void gpio_deassert()
+{
+  *gpio_cleardataout_addr= PPS_PIN;
+}
+
+#else
+
+#include <libsoc_gpio.h>
+#define PPS_OUTPUT  22
+
+gpio *pps_output;
+
+void gpio_setup()
+{
+  pps_output = libsoc_gpio_request(PPS_OUTPUT, LS_SHARED);
+  if (!pps_output) {
+    perror("unable to request gpio pin:");
+    exit(-1);
+  }
+  libsoc_gpio_set_direction(pps_output, OUTPUT);
+
+  if (libsoc_gpio_get_direction(pps_output) != OUTPUT)
+  {
+    perror("unable to set output direction:");
+    exit(-1);
+  }
+}
+
+static inline void gpio_assert()
+{
+  libsoc_gpio_set_level(pps_output, HIGH); // might take ~10 us
+}
+
+static inline void gpio_deassert()
+{
+  libsoc_gpio_set_level(pps_output, LOW); // might take ~10 us
+}
+
+#endif
+
+void scheduler_setup()
 {
   struct sched_param schedp;
 
@@ -38,23 +127,10 @@ void setup_scheduler()
 
 int main(int argc, char* argv[])
 {
-  gpio *pps_output;
   struct timespec t, t2;
 
-  pps_output = libsoc_gpio_request(PPS_OUTPUT, LS_SHARED);
-  if (!pps_output) {
-    perror("unable to request gpio pin:");
-    exit(-1);
-  }
-  libsoc_gpio_set_direction(pps_output, OUTPUT);
-
-  if (libsoc_gpio_get_direction(pps_output) != OUTPUT)
-  {
-    perror("unable to set output direction:");
-    exit(-1);
-  }
-
-  setup_scheduler();
+  gpio_setup();
+  scheduler_setup();
 
   while (1) {
     if (clock_gettime(CLOCK_REALTIME, &t)) {
@@ -86,19 +162,14 @@ int main(int argc, char* argv[])
       }
     } while (t.tv_nsec <= PHASE);
 
-    libsoc_gpio_set_level(pps_output, HIGH); // might take 10 us
+    gpio_assert();
     if (clock_gettime(CLOCK_REALTIME, &t2)) {
         perror("clock_gettime failed:");
         exit(-1);
     }
     //usleep(10);
-    libsoc_gpio_set_level(pps_output, LOW);
+    gpio_deassert();
 
     printf("%lld.%.9ld [%ld...%ld ns]\n", (long long)t.tv_sec, t.tv_nsec, (t.tv_nsec - PHASE), (t2.tv_nsec - PHASE)); 
-  }
-
-  if (pps_output)
-  {
-    libsoc_gpio_free(pps_output);
   }
 }
