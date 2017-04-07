@@ -1,0 +1,10 @@
+[Unit]
+Description=Precision Time Protocol (PTP) service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/sbin/ptp4l -f /etc/linuxptp/ptp4l.conf -i eth0
+
+[Install]
+WantedBy=multi-user.target
