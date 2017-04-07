@@ -55,7 +55,7 @@ void gpio_setup()
     perror("unable to open /dev/mem:");
     exit(-1);
   }
-  gpio_addr = mmap(0, GPIO0_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, 
+  gpio_addr = mmap(0, GPIO0_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED,
                    fd, GPIO0_START_ADDR);
   if (gpio_addr == MAP_FAILED) {
     perror("mmap failed:");
@@ -63,7 +63,7 @@ void gpio_setup()
   }
   gpio_oe_addr = gpio_addr + GPIO_OE;
   gpio_setdataout_addr = gpio_addr + GPIO_SETDATAOUT;
-  gpio_cleardataout_addr = gpio_addr + GPIO_CLEARDATAOUT; 
+  gpio_cleardataout_addr = gpio_addr + GPIO_CLEARDATAOUT;
 
   *gpio_oe_addr &= (0xFFFFFFFF - PPS_PIN);
 }
@@ -181,11 +181,11 @@ int main(int argc, char* argv[])
         perror("clock_gettime failed:");
         exit(-1);
     }
-    //usleep(10);
+    // usleep(1000);
     gpio_deassert();
 
-    printf("%lld.%.9ld [%ld...%ld ns]\n", 
-             (long long)t.tv_sec, t.tv_nsec, 
-              ns_diff(&t, &t_epoch), ns_diff(&t_asserted, &t_epoch)); 
+    printf("%lld.%.9ld [%ld...%ld ns]\n",
+             (long long)t.tv_sec, t.tv_nsec,
+              ns_diff(&t, &t_epoch), ns_diff(&t_asserted, &t_epoch));
   }
 }
