@@ -4,3 +4,6 @@
 
 # build directory
 build/
+
+# python notebooks
+.ipynb_checkpoints
