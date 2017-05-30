@@ -1,0 +1,19 @@
+# hook functions for gps-master role
+
+def before_config():
+    pass
+
+def after_config():
+    pass
+
+def before_status():
+    pass
+
+def after_status():
+    pass
+
+def before_restart():
+    pass
+
+def after_restart():
+    pass

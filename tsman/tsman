@@ -1,0 +1,216 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+""" tsman - RIAPS time synchronization management program
+
+Copyright 2017, Peter Volgyesi, Vanderbilt University
+"""
+import sys
+import os
+import logging
+import hashlib
+import subprocess
+import imp
+
+CURRENT_ROLE_PATH = '/etc/tsman.role'
+CONFIG = {}
+
+def do_config(rolename):
+    """Reconfigure timesync services based on the selected rolename"""
+    if os.geteuid() != 0:
+        logging.critical('Restart operation requires root privileges, re-run with "su"')
+        return
+
+def do_list_configs():
+    """List known role names"""
+    print('Available roles:', ', '.join(CONFIG['roles'].keys()))
+
+def do_status():
+    """Checks the status of timesync services of the configured role"""
+
+    every_ok = True
+
+    if CONFIG['role'] not in CONFIG['roles']:
+        logging.critical('Does not know how to check status for role: %s', CONFIG['role'])
+        return
+
+    rolename = CONFIG['role']
+
+    logging.debug('Verifying configuration files')
+    source_prefix = CONFIG['roles'][rolename]['root']
+    for dirpath, dirs, files in os.walk(source_prefix):
+        target_prefix = dirpath[len(source_prefix):]
+        if not target_prefix:
+            target_prefix = '/'
+        for dname in dirs:
+            target_dir = os.path.join(target_prefix, dname)
+            if not os.path.isdir(target_dir):
+                logging.warn("Missing configuration directory: %s", target_dir)
+                every_ok = False
+        for fname in files:
+            target_file = os.path.join(target_prefix, fname)
+            if not os.path.isfile(target_file):
+                logging.warn("Missing configuration file: %s", target_file)
+                every_ok = False
+            else:
+                source_file = os.path.join(dirpath, fname)
+                logging.debug('Comparing %s vs %s', source_file, target_file)
+                source_sha1 = hashlib.sha1()
+                source_sha1.update(open(source_file, "rb").read())
+                target_sha1 = hashlib.sha1()
+                target_sha1.update(open(target_file, "rb").read())
+                if source_sha1.digest() != target_sha1.digest():
+                    logging.warn("Corrupt configuration file: %s", target_file)
+                    every_ok = False
+
+    logging.debug('Verifying services')
+    services_file = CONFIG['roles'][rolename]['services']
+    if services_file:
+        services = [line.split() for line in open(services_file).readlines()]
+    else:
+        services = []
+    for service_status, service_name in services:
+        logging.debug('Checking service: %s', service_name)
+        with open(os.devnull, 'wb') as hide_output:
+            exit_code = subprocess.Popen(['systemctl', 'is-enabled', service_name],
+                                         stdout=hide_output, stderr=hide_output).wait()
+            if service_status == '+':
+                if exit_code != 0:
+                    logging.warn("Service %s is not enabled", service_name)
+                    every_ok = False
+            elif exit_code == 0:
+                logging.warn("Service %s is enabled (should be disabled)", service_name)
+                every_ok = False
+
+            exit_code = subprocess.Popen(['systemctl', 'is-active', service_name],
+                                         stdout=hide_output, stderr=hide_output).wait()
+            if service_status == '+':
+                if exit_code != 0:
+                    logging.warn("Service %s is not running", service_name)
+                    every_ok = False
+            elif exit_code == 0:
+                logging.warn("Service %s is running (should not)", service_name)
+                every_ok = False
+
+    logging.debug('Verifying role-specific rules')
+    hooks = load_hooks(rolename)
+    if hasattr(hooks, 'after_status'):
+        if hooks.after_status():
+            every_ok = False
+
+    if every_ok:
+        logging.info('Everything looks fine for role: %s', rolename)
+
+def do_restart():
+    """Restart timesync services of the configured role"""
+    if os.geteuid() != 0:
+        logging.critical('Restart operation requires root privileges, re-run with "su"')
+        return
+
+
+def init_config():
+    """Initialize in-memory configuration database"""
+    CONFIG['db'] = find_config_db()
+
+    if CONFIG['db'] is None:
+        logging.critical('Cannot find configuration database')
+        sys.exit(1)
+    else:
+        logging.debug('Using configuration database: %s', CONFIG['db'])
+
+    roles = {}
+    for dname in os.listdir(CONFIG['db']):
+        if dname.endswith('.root'):
+            rolename = os.path.splitext(dname)[0]
+            roles[rolename] = {'root': os.path.join(CONFIG['db'], dname)}
+
+            services = os.path.join(CONFIG['db'], rolename + '.services')
+            if os.path.isfile(services):
+                roles[rolename]['services'] = services
+            else:
+                logging.warn('No services config file has been found for role %s', rolename)
+                roles[rolename]['services'] = None
+
+            hooks = os.path.join(CONFIG['db'], rolename + '.hooks')
+            if os.path.isfile(hooks):
+                roles[rolename]['hooks'] = hooks
+            else:
+                logging.warn('No hooks file has been found for role %s', rolename)
+                roles[rolename]['hooks'] = None
+
+
+    logging.debug('Found roles: %s', ', '.join(roles.keys()))
+    CONFIG['roles'] = roles
+
+    if os.path.isfile(CURRENT_ROLE_PATH):
+        with open(CURRENT_ROLE_PATH) as f_role:
+            CONFIG['role'] = f_role.read().strip()
+    else:
+        default_role = sorted(list(roles.keys()))[0]
+        logging.warn('Could not find current role setting, using default: %s', default_role)
+        CONFIG['role'] = default_role
+
+    logging.debug('Current role: %s', CONFIG['role'])
+    if CONFIG['role'] not in CONFIG['roles']:
+        logging.warn('Current role (%s) is not found in the configuration database', CONFIG['role'])
+
+def find_config_db():
+    """Find the root folder of the configuration database"""
+    search_path = [os.getcwd(),
+                   '/usr/share/tsman',
+                   '/usr/local/share/tsman',
+                   '/opt/riaps/share/tsman',
+                   '/opt/riaps/amd64/share/tsman',
+                   '/opt/riaps/armhf/share/tsman']
+    for root in search_path:
+        config_db = os.path.join(root, 'config')
+        if os.path.isdir(config_db):
+            return config_db
+
+
+def load_hooks(rolename):
+    """Try to load/import role-specific hooks"""
+    hooks_fname = CONFIG['roles'][rolename]['hooks']
+    if hooks_fname and os.path.isfile(hooks_fname):
+        hooks_modname = rolename + '_hooks'
+        return imp.load_source(hooks_modname, hooks_fname)
+
+def usage():
+    print('usage: %s <command> [args]' % (sys.argv[0]))
+    print('    valid commands:')
+    print('        config [<rolename>] - (re)configure timesync services')
+    print('                              list roles if no rolename is given')
+    print('        status              - checks timesync services')
+    print('        restart             - restart timesync services\n')
+
+
+def main(arguments):
+    """Entry point, see usage() for details."""
+
+    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
+    init_config()
+
+    if len(arguments) > 0:
+        if arguments[0] == 'config':
+            if len(arguments) == 2:
+                do_config(arguments[1])
+            elif len(arguments) == 1:
+                do_list_configs()
+            else:
+                return usage()
+        elif arguments[0] == 'status':
+            if len(arguments) == 1:
+                do_status()
+            else:
+                return usage()
+        elif arguments[0] == 'restart':
+            if len(arguments) == 1:
+                do_restart()
+            else:
+                return usage()
+        else:
+            return usage()
+    else:
+        return usage()
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv[1:]))
