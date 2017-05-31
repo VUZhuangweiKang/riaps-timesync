@@ -34,6 +34,8 @@ def do_status():
         return
 
     rolename = CONFIG['role']
+    hooks = CONFIG['roles'][rolename]['hooks']
+    services = CONFIG['roles'][rolename]['services']
 
     logging.debug('Verifying configuration files')
     source_prefix = CONFIG['roles'][rolename]['root']
@@ -44,12 +46,12 @@ def do_status():
         for dname in dirs:
             target_dir = os.path.join(target_prefix, dname)
             if not os.path.isdir(target_dir):
-                logging.warn("Missing configuration directory: %s", target_dir)
+                logging.warning("Missing configuration directory: %s", target_dir)
                 every_ok = False
         for fname in files:
             target_file = os.path.join(target_prefix, fname)
             if not os.path.isfile(target_file):
-                logging.warn("Missing configuration file: %s", target_file)
+                logging.warning("Missing configuration file: %s", target_file)
                 every_ok = False
             else:
                 source_file = os.path.join(dirpath, fname)
@@ -59,15 +61,10 @@ def do_status():
                 target_sha1 = hashlib.sha1()
                 target_sha1.update(open(target_file, "rb").read())
                 if source_sha1.digest() != target_sha1.digest():
-                    logging.warn("Corrupt configuration file: %s", target_file)
+                    logging.warning("Corrupt configuration file: %s", target_file)
                     every_ok = False
 
     logging.debug('Verifying services')
-    services_file = CONFIG['roles'][rolename]['services']
-    if services_file:
-        services = [line.split() for line in open(services_file).readlines()]
-    else:
-        services = []
     for service_status, service_name in services:
         logging.debug('Checking service: %s', service_name)
         with open(os.devnull, 'wb') as hide_output:
@@ -75,30 +72,30 @@ def do_status():
                                          stdout=hide_output, stderr=hide_output).wait()
             if service_status == '+':
                 if exit_code != 0:
-                    logging.warn("Service %s is not enabled", service_name)
+                    logging.warning("Service %s is not enabled", service_name)
                     every_ok = False
             elif exit_code == 0:
-                logging.warn("Service %s is enabled (should be disabled)", service_name)
+                logging.warning("Service %s is enabled (should be disabled)", service_name)
                 every_ok = False
 
             exit_code = subprocess.Popen(['systemctl', 'is-active', service_name],
                                          stdout=hide_output, stderr=hide_output).wait()
             if service_status == '+':
                 if exit_code != 0:
-                    logging.warn("Service %s is not running", service_name)
+                    logging.warning("Service %s is not running", service_name)
                     every_ok = False
             elif exit_code == 0:
-                logging.warn("Service %s is running (should not)", service_name)
+                logging.warning("Service %s is running (should not)", service_name)
                 every_ok = False
 
-    logging.debug('Verifying role-specific rules')
-    hooks = load_hooks(rolename)
-    if hasattr(hooks, 'after_status'):
-        if hooks.after_status():
-            every_ok = False
+    if hasattr(hooks, 'check_status'):
+        logging.debug('Verifying role-specific rules')
+        every_ok &= hooks.check_status()
 
     if every_ok:
         logging.info('Everything looks fine for role: %s', rolename)
+    else:
+        logging.warning('Misconfigured role: %s, try using "restart" or "config"', rolename)
 
 def do_restart():
     """Restart timesync services of the configured role"""
@@ -106,6 +103,36 @@ def do_restart():
         logging.critical('Restart operation requires root privileges, re-run with "su"')
         return
 
+    if CONFIG['role'] not in CONFIG['roles']:
+        logging.critical('Does not know how to check status for role: %s', CONFIG['role'])
+        return
+
+    rolename = CONFIG['role']
+    hooks = CONFIG['roles'][rolename]['hooks']
+    services = CONFIG['roles'][rolename]['services']
+
+    if hasattr(hooks, 'before_restart'):
+        logging.debug('Executing role-specific perparation steps')
+        hooks.before_restart()
+
+    logging.info('Restarting services')
+    for service_status, service_name in services:
+        logging.debug('Restarting service: %s', service_name)
+        with open(os.devnull, 'wb') as hide_output:
+            if service_status == '+':
+                exit_code = subprocess.Popen(['systemctl', 'restart', service_name],
+                                             stdout=hide_output, stderr=hide_output).wait()
+                if exit_code != 0:
+                    logging.warning("Service %s cannot be started", service_name)
+            else:
+                exit_code = subprocess.Popen(['systemctl', 'stop', service_name],
+                                             stdout=hide_output, stderr=hide_output).wait()
+                if exit_code != 0:
+                    logging.warning("Service %s cannot be stopped (should not be running)", service_name)
+
+    if hasattr(hooks, 'after_restart'):
+        logging.debug('Executing role-specific finishing steps')
+        hooks.after_restart()
 
 def init_config():
     """Initialize in-memory configuration database"""
@@ -125,16 +152,16 @@ def init_config():
 
             services = os.path.join(CONFIG['db'], rolename + '.services')
             if os.path.isfile(services):
-                roles[rolename]['services'] = services
+                roles[rolename]['services'] = [line.split() for line in open(services).readlines()]
             else:
-                logging.warn('No services config file has been found for role %s', rolename)
-                roles[rolename]['services'] = None
+                logging.warning('No services config file has been found for role %s', rolename)
+                roles[rolename]['services'] = []
 
             hooks = os.path.join(CONFIG['db'], rolename + '.hooks')
             if os.path.isfile(hooks):
-                roles[rolename]['hooks'] = hooks
+                roles[rolename]['hooks'] = imp.load_source(rolename + '_hooks', hooks)
             else:
-                logging.warn('No hooks file has been found for role %s', rolename)
+                logging.warning('No hooks file has been found for role %s', rolename)
                 roles[rolename]['hooks'] = None
 
 
@@ -146,16 +173,16 @@ def init_config():
             CONFIG['role'] = f_role.read().strip()
     else:
         default_role = sorted(list(roles.keys()))[0]
-        logging.warn('Could not find current role setting, using default: %s', default_role)
+        logging.warning('Could not find current role setting, using default: %s', default_role)
         CONFIG['role'] = default_role
 
     logging.debug('Current role: %s', CONFIG['role'])
     if CONFIG['role'] not in CONFIG['roles']:
-        logging.warn('Current role (%s) is not found in the configuration database', CONFIG['role'])
+        logging.warning('Current role (%s) is not found in the configuration database', CONFIG['role'])
 
 def find_config_db():
     """Find the root folder of the configuration database"""
-    search_path = [os.getcwd(),
+    search_path = [os.path.dirname(os.path.realpath(sys.argv[0])),
                    '/usr/share/tsman',
                    '/usr/local/share/tsman',
                    '/opt/riaps/share/tsman',
@@ -165,14 +192,6 @@ def find_config_db():
         config_db = os.path.join(root, 'config')
         if os.path.isdir(config_db):
             return config_db
-
-
-def load_hooks(rolename):
-    """Try to load/import role-specific hooks"""
-    hooks_fname = CONFIG['roles'][rolename]['hooks']
-    if hooks_fname and os.path.isfile(hooks_fname):
-        hooks_modname = rolename + '_hooks'
-        return imp.load_source(hooks_modname, hooks_fname)
 
 def usage():
     print('usage: %s <command> [args]' % (sys.argv[0]))
@@ -186,7 +205,7 @@ def usage():
 def main(arguments):
     """Entry point, see usage() for details."""
 
-    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
+    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
     init_config()
 
     if len(arguments) > 0:

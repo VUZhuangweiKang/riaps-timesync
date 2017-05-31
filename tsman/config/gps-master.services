@@ -1,4 +1,3 @@
-+ capemgr.service
 + gpsd.service
 + gpsd.socket
 + chrony.service
