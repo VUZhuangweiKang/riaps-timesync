@@ -1,4 +1,4 @@
-# hook functions for ntp-master role
+# hook functions for slave role
 
 import logging
 
