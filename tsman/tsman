@@ -262,7 +262,7 @@ def usage():
 def main(arguments):
     """Entry point, see usage() for details."""
 
-    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
+    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
     init_config()
 
     if len(arguments) > 0:

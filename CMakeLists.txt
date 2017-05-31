@@ -4,7 +4,7 @@
 #
 
 cmake_minimum_required (VERSION 3.0.0)
-project (riaps-timesync VERSION 1.0.0)
+project (riaps-timesync VERSION 1.1.0)
 
 
 set(arch "amd64" CACHE STRING "amd64/armhf")
@@ -50,7 +50,7 @@ install(TARGETS riaps_ts DESTINATION lib)
 install(DIRECTORY src/ DESTINATION include/riaps_ts
         FILES_MATCHING PATTERN "*.h")
 install(PROGRAMS tsman/tsman DESTINATION bin)
-install(DIRECTORY tsman/config DESTINATION share/tsman/config)
+install(DIRECTORY tsman/config DESTINATION share/tsman)
 
 
 IF(EXISTS "${CMAKE_ROOT}/Modules/CPack.cmake")
@@ -72,6 +72,7 @@ IF(EXISTS "${CMAKE_ROOT}/Modules/CPack.cmake")
 	SET(CPACK_DEBIAN_PACKAGE_SECTION "devel")
 	SET(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${arch})
 	SET(CPACK_COMPONENTS_ALL Libraries ApplicationData)
+	SET(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/DEBIAN/postinst")
 	INCLUDE(CPack)
 
 ENDIF(EXISTS "${CMAKE_ROOT}/Modules/CPack.cmake")
