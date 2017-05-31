@@ -24,13 +24,10 @@ script:
 - make package
 - cd ${TRAVIS_BUILD_DIR}/python
 - python3 setup.py bdist_wheel -d "${TRAVIS_BUILD_DIR}/build-${arch}"
-- cd ${TRAVIS_BUILD_DIR}/config
-- tar ca --owner=0 --group=0 -vf "${TRAVIS_BUILD_DIR}/build-${arch}/riaps-timesync-config.tar.gz" . 
 before_deploy:
   - cd ${TRAVIS_BUILD_DIR}
   - export RELEASE_PKG_FILE=$(ls build-${arch}/*.deb)
   - export RELEASE_WHL_FILE=$(ls build-${arch}/*.whl)
-  - export RELEASE_TGZ_FILE=$(ls build-${arch}/*.tar.gz)
   - echo "deploying $RELEASE_PKG_FILE to GitHub releases"
 deploy:
   provider: releases
@@ -41,7 +38,6 @@ deploy:
   file:
     - "${RELEASE_PKG_FILE}"
     - "${RELEASE_WHL_FILE}"
-    - "${RELEASE_TGZ_FILE}"
   skip_cleanup: true
   on:
     tags: true
