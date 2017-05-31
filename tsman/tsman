@@ -20,17 +20,73 @@ def do_config(rolename):
         logging.critical('Restart operation requires root privileges, re-run with "su"')
         return
 
+    if rolename not in CONFIG['roles']:
+        logging.critical('Does not know how to configure role: %s', CONFIG['role'])
+        return
+
+    hooks = CONFIG['roles'][rolename]['hooks']
+    services = CONFIG['roles'][rolename]['services']
+
+    if hasattr(hooks, 'before_config'):
+        logging.debug('Executing role-specific perparation steps')
+        hooks.before_config()
+
+    logging.info('Updating configuration files')
+    source_prefix = CONFIG['roles'][rolename]['root']
+    for dirpath, dirs, files in os.walk(source_prefix):
+        target_prefix = dirpath[len(source_prefix):]
+        if not target_prefix:
+            target_prefix = '/'
+        for dname in dirs:
+            target_dir = os.path.join(target_prefix, dname)
+            if not os.path.isdir(target_dir):
+                os.makedirs(target_dir)
+                logging.debug("Creating missing configuration directory: %s", target_dir)
+        for fname in files:
+            source_file = os.path.join(dirpath, fname)
+            target_file = os.path.join(target_prefix, fname)
+            logging.debug("Overwriting configuration file: %s", target_file)
+            with open(source_file, 'rb') as sf, open(target_file, 'wb') as tf:
+                tf.write(sf.read())
+
+    logging.info('Enabling services')
+    for service_status, service_name in services:
+        with open(os.devnull, 'wb') as hide_output:
+            if service_status == '+':
+                logging.debug('Enable service: %s', service_name)
+                exit_code = subprocess.Popen(['systemctl', 'enable', service_name],
+                                             stdout=hide_output, stderr=hide_output).wait()
+                if exit_code != 0:
+                    logging.warning("Service %s cannot be enabled", service_name)
+            else:
+                logging.debug('Disable service: %s', service_name)
+                exit_code = subprocess.Popen(['systemctl', 'disable', service_name],
+                                             stdout=hide_output, stderr=hide_output).wait()
+                if exit_code != 0:
+                    logging.warning("Service %s cannot be disabled (should not be enabled)", service_name)
+
+    if hasattr(hooks, 'after_config'):
+        logging.debug('Executing role-specific finishing steps')
+        hooks.after_config()
+
+    CONFIG['role'] = rolename
+    with open(CURRENT_ROLE_PATH, 'w') as f_role:
+        f_role.write(rolename)
+
+    do_restart()
+
+
 def do_list_configs():
     """List known role names"""
     print('Available roles:', ', '.join(CONFIG['roles'].keys()))
 
+
 def do_status():
     """Checks the status of timesync services of the configured role"""
-
     every_ok = True
 
     if CONFIG['role'] not in CONFIG['roles']:
-        logging.critical('Does not know how to check status for role: %s', CONFIG['role'])
+        logging.critical('Does not know how to restart services for role: %s', CONFIG['role'])
         return
 
     rolename = CONFIG['role']
@@ -117,14 +173,15 @@ def do_restart():
 
     logging.info('Restarting services')
     for service_status, service_name in services:
-        logging.debug('Restarting service: %s', service_name)
         with open(os.devnull, 'wb') as hide_output:
             if service_status == '+':
+                logging.debug('Restarting service: %s', service_name)
                 exit_code = subprocess.Popen(['systemctl', 'restart', service_name],
                                              stdout=hide_output, stderr=hide_output).wait()
                 if exit_code != 0:
                     logging.warning("Service %s cannot be started", service_name)
             else:
+                logging.debug('Stoping service: %s', service_name)
                 exit_code = subprocess.Popen(['systemctl', 'stop', service_name],
                                              stdout=hide_output, stderr=hide_output).wait()
                 if exit_code != 0:

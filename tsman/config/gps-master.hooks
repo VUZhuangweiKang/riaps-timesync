@@ -4,10 +4,7 @@ import logging
 
 def before_config():
     """Execute custom steps before configuring new role."""
-    if not _is_chronocape_present():
-        logging.warning('ChronoCape board has not been found, trying to enable now')
-        with open('/sys/devices/platform/bone_capemgr/slots', 'w') as slots:
-            slots.write('CHRONOCAPE\n')
+    pass
 
 def after_config():
     """Execute custom steps after configuring new role."""
@@ -15,7 +12,10 @@ def after_config():
 
 def before_restart():
     """Execute custom steps before restarting services."""
-    pass
+    if not _is_chronocape_present():
+        logging.warning('ChronoCape board has not been found, trying to enable now')
+        with open('/sys/devices/platform/bone_capemgr/slots', 'w') as slots:
+            slots.write('CHRONOCAPE\n')
 
 def after_restart():
     """Execute custom steps after restarting services."""
