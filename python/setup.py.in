@@ -1,8 +1,0 @@
-from setuptools import setup
-
-setup(
-    name='riaps_ts',
-    version='${PACKAGE_VERSION}',
-    package_dir={ '': '${CMAKE_CURRENT_SOURCE_DIR}' },
-    py_modules=['riaps_ts']
-)

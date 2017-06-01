@@ -16,16 +16,10 @@ addons:
 before_script:
 - source version.sh
 - pip3 install --user travis --upgrade pip setuptools wheel
-- wget https://github.com/gruntwork-io/fetch/releases/download/v0.1.1/fetch_linux_amd64
-- source version.sh
-- chmod +x fetch_linux_amd64
-- ./fetch_linux_amd64 --repo="https://github.com/RIAPS/riaps-externals/" --tag=$externalsversion --release-asset="riaps-externals-amd64.deb" .
-- sudo dpkg -i riaps-externals-amd64.deb
 script:
 - chmod +x build.sh package.sh
 - "./build.sh &&  ./package.sh"
 - cd ${TRAVIS_BUILD_DIR}/python
-- python3 setup.py bdist_wheel -d "${TRAVIS_BUILD_DIR}/package"
 deploy:
   provider: releases
   overwrite: true

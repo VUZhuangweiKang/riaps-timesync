@@ -19,3 +19,9 @@ cmake_install.cmake
 install_manifest.txt
 CTestTestfile.cmake
 cmake-build-debug
+
+tools/analog_gen
+tools/chrony_socat
+tools/gpio_timing
+tools/posix_clocks
+tools/pps_gen
