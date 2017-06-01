@@ -1,0 +1,8 @@
+Package: riaps-timesync-armhf
+Architecture: armhf
+Maintainer: Institute for Software Integrated Systems
+Depends: debconf (>= 0.5.00), python3, chrony, linuxptp, gpsd, riaps-externals-armhf
+Priority: required
+Version:  @version@
+Description: Time syncrhonization services for the RIAPS platform.
+

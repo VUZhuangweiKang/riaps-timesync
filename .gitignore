@@ -1,11 +1,21 @@
-# OSX-related
 *.DS_Store
 ._*
-
 __pycache__/
-
-# build directory
-build/
-
-# python notebooks
 .ipynb_checkpoints
+build/
+build-amd64/
+build-armhf/
+amd64-opt/
+armhf-opt/
+armhf/
+package
+build-armhf
+build-amd64
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Makefile
+cmake_install.cmake
+install_manifest.txt
+CTestTestfile.cmake
+cmake-build-debug

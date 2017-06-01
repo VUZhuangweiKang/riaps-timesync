@@ -1,4 +1,5 @@
 set -e
+ldconfig
 export PATH=${PATH}:/opt/riaps/armhf/bin:/opt/riaps/amd64/bin
 tsman config ntp-master
 
