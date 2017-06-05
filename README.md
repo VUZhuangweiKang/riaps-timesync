@@ -18,9 +18,9 @@ Notes:
 
 The following time synchronization roles are supported:
 
- - **gps-master**: the node is synchornized to GPS (using the ChronoCape board) and acts as a PTP master on the local network. If the GPS signal is not present (or not reliable), the node falls back to NTP-based timesync (but still acts as a PTP master). Needs ChoronCape board and/or internet access.
+ - **gps-master**: the node is synchornized to GPS (using the ChronoCape board) and acts as a PTP master on the local network. If the GPS signal is not present (or not reliable), the node falls back to NTP-based timesync (but still acts as a PTP master). Needs ChronoCape board and/or internet access.
 
- - **ntp-master**: the node is synchornized to NTP and acts as a PTP master on the local network. Needs internet access.
+ - **ntp-master**: the node is synchronized to NTP and acts as a PTP master on the local network. Needs internet access.
 
  - **slave**: the node is forced to use PTP in slave mode. Needs a PTP master on the local network.
 
