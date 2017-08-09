@@ -4,5 +4,5 @@ Maintainer: Institute for Software Integrated Systems
 Depends: debconf (>= 0.5.00), python3, chrony, linuxptp, gpsd, riaps-externals-amd64
 Priority: required
 Version:  @version@
-Description: Time syncrhonization services for the RIAPS platform.
+Description: Time synchronization services for the RIAPS platform.
 
