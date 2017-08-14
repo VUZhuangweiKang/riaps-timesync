@@ -1,1 +1,3 @@
+rm -f /etc/udev/rules.d/*-riaps-timesync.rules
+rm -rf /opt/riaps/armhf/share/tsman/config/__pycache__
 ldconfig
