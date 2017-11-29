@@ -10,12 +10,4 @@ all : $(BIN)
 clean :
 	rm -f $(BIN) $(OBJS) ./.depend
 
-.PHONY: all clean depend
-
-depend: .depend
-
-.depend: $(SRCS)
-	rm -f ./.depend
-	$(CC) $(CFLAGS) -MM $^ -MF  ./.depend
-
-include .depend
+.PHONY: all clean 
