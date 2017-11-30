@@ -14,6 +14,7 @@
 #include <sys/wait.h>
 #include <sched.h>
 #include <time.h>
+#include <math.h>
 #include <argp.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -144,65 +145,81 @@ long ns_diff(const struct timespec *t1, const struct timespec *t2)
   return t1->tv_nsec - t2->tv_nsec + (t1->tv_sec - t2->tv_sec) * 1000000000L;
 }
 
+static inline void safe_gettime(struct timespec* t)
+{
+  if (clock_gettime(CLOCK_REALTIME, t)) {
+    perror("clock_gettime failed:");
+    exit(-1);
+  }
+}
+
 void sync_loop(unsigned int freq, unsigned int width)
 {
+  struct timespec t;
   unsigned long period = NANOS_PER_SEC / freq;  // rounding errors should be ok
+  unsigned long ns_width = width * 1000;
 
   while (1) {
+    double err_sum = 0.0, err_sqsum = 0.0;
+    int err_cnt = 0;
+    
     for (int period_cnt = 0; period_cnt < freq; period_cnt++) {
-      struct timespec t, t_epoch_guard, t_epoch, t_asserted;
+      struct timespec t_trigger_guard, t_trigger, t_assert, t_asserted;
+      double err;
       unsigned long phase = period_cnt * period;
 
-      if (clock_gettime(CLOCK_REALTIME, &t)) {
-         perror("clock_gettime failed:");
-         exit(-1);
-      }
+      safe_gettime(&t);
 
-      t_epoch.tv_sec = t.tv_sec;
-      t_epoch.tv_nsec = phase;
+      t_trigger.tv_sec = t.tv_sec;
+      t_trigger.tv_nsec = phase;
       if (t.tv_nsec > phase) {
-        t_epoch.tv_sec += 1;
+        t_trigger.tv_sec += 1;
       }
 
-      t_epoch_guard.tv_sec = t_epoch.tv_sec;
-      t_epoch_guard.tv_nsec = t_epoch.tv_nsec - BUSY_WAIT_INTERVAL;
-      if (t_epoch_guard.tv_nsec < 0) {
-        t_epoch_guard.tv_sec -= 1;
-        t_epoch_guard.tv_nsec += 1000000000L;
+      t_trigger_guard.tv_sec = t_trigger.tv_sec;
+      t_trigger_guard.tv_nsec = t_trigger.tv_nsec - BUSY_WAIT_INTERVAL;
+      if (t_trigger_guard.tv_nsec < 0) {
+        t_trigger_guard.tv_sec -= 1;
+        t_trigger_guard.tv_nsec += 1000000000L;
       }
-      if (ns_diff(&t_epoch_guard, &t) < 0)
+      if (ns_diff(&t_trigger_guard, &t) < 0)
       {
-        printf("too close to epoch, skipping one second.\n");
-        t_epoch_guard.tv_sec += 1;
-        t_epoch.tv_sec += 1;
+        printf("too close to trigger time, skipping one pulse.\n");
+        continue;
       }
 
       // long wait by timer / blocking
-      if (clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &t_epoch_guard, NULL)) {
+      if (clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &t_trigger_guard, NULL)) {
         perror("clock_nanosleep failed:");
         exit(-1);
       }
 
       // busy wait for increased accuracy (approx 2us accuracy on BBB)
       do {
-        if (clock_gettime(CLOCK_REALTIME, &t)) {
-          perror("clock_gettime failed:");
-          exit(-1);
-        }
-      } while (ns_diff(&t, &t_epoch) < 0);
+        safe_gettime(&t);
+      } while (ns_diff(&t, &t_trigger) < 0);
 
+      safe_gettime(&t_assert);
       gpio_assert();
-      if (clock_gettime(CLOCK_REALTIME, &t_asserted)) {
-          perror("clock_gettime failed:");
-          exit(-1);
-      }
-      usleep(width);
+      safe_gettime(&t_asserted);
+      //usleep(width);
+      do {
+        safe_gettime(&t);
+      } while (ns_diff(&t, &t_asserted) < ns_width);
       gpio_deassert();
 
-      printf("%lld.%.9ld [%ld...%ld ns]\n",
-               (long long)t.tv_sec, t.tv_nsec,
-                ns_diff(&t, &t_epoch), ns_diff(&t_asserted, &t_epoch));
+      err = (ns_diff(&t_asserted, &t_trigger) - ns_diff(&t_assert, &t_trigger)) / 2.0;
+      err_sum += err;
+      err_sqsum += err * err;
+      err_cnt++;
     }
+    safe_gettime(&t);
+    
+    // printf("%lld: %d sync pulse(s), timing error: bias = %.0f ns, std = %.0f ns\n",
+    //           (long long)t.tv_sec, err_cnt, err_sum / err_cnt, sqrt(err_sqsum / err_cnt));
+    printf("%lld: %d sync pulse(s), timing accuracy: %.0f ns\n",
+            (long long)t.tv_sec, err_cnt, sqrt(err_sqsum / err_cnt));
+
   }
 }
 
