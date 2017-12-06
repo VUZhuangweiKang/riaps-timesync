@@ -21,7 +21,6 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
-
 struct arguments
 {
   int freq;
@@ -208,7 +207,7 @@ void sync_loop(unsigned int freq, unsigned int width)
       } while (ns_diff(&t, &t_asserted) < ns_width);
       gpio_deassert();
 
-      err = (ns_diff(&t_asserted, &t_trigger) - ns_diff(&t_assert, &t_trigger)) / 2.0;
+      err = (ns_diff(&t_asserted, &t_trigger) + ns_diff(&t_assert, &t_trigger)) / 2.0;
       err_sum += err;
       err_sqsum += err * err;
       err_cnt++;

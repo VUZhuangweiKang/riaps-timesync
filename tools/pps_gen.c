@@ -87,7 +87,7 @@ gpio *pps_output;
 
 void gpio_setup()
 {
-  pps_output = libsoc_gpio_request(PPS_OUTPUT, LS_SHARED);
+  pps_output = libsoc_gpio_request(PPS_OUTPUT, LS_GPIO_SHARED);
   if (!pps_output) {
     perror("unable to request gpio pin:");
     exit(-1);
