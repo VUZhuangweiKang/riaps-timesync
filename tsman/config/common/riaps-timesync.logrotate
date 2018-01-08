@@ -2,6 +2,7 @@
 /var/log/phc2sys.log
 /var/log/chrony.log
 /var/log/gpsd.log
+/var/log/timesync.log
 {
         rotate 7
         daily
