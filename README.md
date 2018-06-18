@@ -24,7 +24,9 @@ The following time synchronization roles are supported:
  
  - **ntp-standalone**: the node is synchronized to NTP with the PTP services disabled. This profile is intended for VM-only development, since Ethernet timestamping is not supported in most VMs. Needs internet access.
 
- - **slave**: the node is forced to use PTP in slave mode. Needs a PTP master on the local network.
+- **master**: the node acts as a PTP server but is not synchronized to external sources. To be used in isolated deployments. Note: all slave nodes will be syncrhonized to this _free running_ master.
+
+- **slave**: the node is forced to use PTP in slave mode. Needs a PTP master on the local network.
 
 Running **tsman**:
 
