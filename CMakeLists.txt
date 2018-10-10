@@ -49,5 +49,6 @@ target_link_libraries(test_timesync riaps_ts m)
 install(TARGETS riaps_ts DESTINATION lib)
 install(DIRECTORY src/ DESTINATION include/riaps_ts
         FILES_MATCHING PATTERN "*.h")
-install(PROGRAMS tsman/tsman DESTINATION bin)
-install(DIRECTORY tsman/config DESTINATION share/tsman)
+install(PROGRAMS timesync/timesyncctl DESTINATION bin)
+install(PROGRAMS timesync/timesyncd DESTINATION bin)
+install(DIRECTORY timesync/config DESTINATION share/timesync)

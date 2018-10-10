@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-""" tsman - RIAPS time synchronization management program
+"""timesyncctl - RIAPS time synchronization management program
 
 Copyright 2017, Peter Volgyesi, Vanderbilt University
 """
@@ -11,7 +11,7 @@ import hashlib
 import subprocess
 import imp
 
-CURRENT_ROLE_PATH = '/etc/tsman.role'
+CURRENT_ROLE_PATH = '/etc/timesync.role'
 CONFIG = {}
 
 def do_config(rolename):
@@ -240,11 +240,11 @@ def init_config():
 def find_config_db():
     """Find the root folder of the configuration database"""
     search_path = [os.path.dirname(os.path.realpath(sys.argv[0])),
-                   '/usr/share/tsman',
-                   '/usr/local/share/tsman',
-                   '/opt/riaps/share/tsman',
-                   '/opt/riaps/amd64/share/tsman',
-                   '/opt/riaps/armhf/share/tsman']
+                   '/usr/share/timesync',
+                   '/usr/local/share/timesync',
+                   '/opt/riaps/share/timesync',
+                   '/opt/riaps/amd64/share/timesync',
+                   '/opt/riaps/armhf/share/timesync']
     for root in search_path:
         config_db = os.path.join(root, 'config')
         if os.path.isdir(config_db):
