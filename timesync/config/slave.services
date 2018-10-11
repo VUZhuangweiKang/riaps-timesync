@@ -4,3 +4,4 @@
 + ptp4l.service
 + phc2sys.service
 + rsyslog.service
++ timesyncd.service

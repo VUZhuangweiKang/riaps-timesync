@@ -230,7 +230,7 @@ def init_config():
             CONFIG['role'] = f_role.read().strip()
     else:
         default_role = sorted(list(roles.keys()))[0]
-        logging.warning('Could not find current role setting, using default: %s', default_role)
+        logging.debug('Could not find current role setting, using default: %s', default_role)
         CONFIG['role'] = default_role
 
     logging.debug('Current role: %s', CONFIG['role'])

@@ -8,7 +8,8 @@ project (riaps-timesync VERSION 1.1.1)
 
 
 set(arch "amd64" CACHE STRING "amd64/armhf")
-set(riaps_prefix "/opt/riaps/" CACHE STRING "the riaps prefix")
+set(riaps_prefix "/opt/riaps" CACHE STRING "the riaps prefix")
+set(arch_independent_prefix "/usr/local" CACHE STRING "architecture independent prefix")
 
 #Set the platform
 if (${arch} STREQUAL "armhf")
@@ -49,6 +50,6 @@ target_link_libraries(test_timesync riaps_ts m)
 install(TARGETS riaps_ts DESTINATION lib)
 install(DIRECTORY src/ DESTINATION include/riaps_ts
         FILES_MATCHING PATTERN "*.h")
-install(PROGRAMS timesync/timesyncctl DESTINATION bin)
-install(PROGRAMS timesync/timesyncd DESTINATION bin)
-install(DIRECTORY timesync/config DESTINATION share/timesync)
+install(PROGRAMS timesync/timesyncctl DESTINATION ${arch_independent_prefix}/bin)
+install(PROGRAMS timesync/timesyncd DESTINATION ${arch_independent_prefix}/bin)
+install(DIRECTORY timesync/config DESTINATION ${arch_independent_prefix}/share/timesync)
