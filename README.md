@@ -18,15 +18,11 @@ Notes:
 
 The following time synchronization roles are supported:
 
- - **gps-master**: the node is synchronized to GPS (using the ChronoCape board) and acts as a PTP master on the local network. If the GPS signal is not present (or not reliable), the node falls back to NTP-based timesync (but still acts as a PTP master). Needs ChronoCape board and/or internet access.
+ - **master**: the node is synchronized to (1) GPS (using the ChronoCape board) or (2) NTP (well-known internet server) or (3) NTP (the control/VM host) in this order. Selecting the best reference clock is automatic. It also acts as a PTP master on the local network.
 
- - **ntp-master**: the node is synchronized to NTP and acts as a PTP master on the local network. Needs internet access.
+ - **standalone**: same as master, but PTP master role is disabled.
  
- - **ntp-standalone**: the node is synchronized to NTP with the PTP services disabled. This profile is intended for VM-only development, since Ethernet timestamping is not supported in most VMs. Needs internet access.
-
-- **master**: the node acts as a PTP server but is not synchronized to external sources. To be used in isolated deployments. Note: all slave nodes will be syncrhonized to this _free running_ master.
-
-- **slave**: the node is forced to use PTP in slave mode. Needs a PTP master on the local network.
+ - **slave**: the node is forced to use PTP in slave mode. Needs a PTP master on the local network.
 
 Running **timesyncctl**:
 

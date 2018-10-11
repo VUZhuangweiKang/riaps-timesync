@@ -1,5 +1,5 @@
-- gpsd.service
-- gpsd.socket
++ gpsd.service
++ gpsd.socket
 + chrony.service
 - phc2sys.service
 - ptp4l.service
