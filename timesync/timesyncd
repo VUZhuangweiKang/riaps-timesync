@@ -8,6 +8,56 @@ import logging
 import datetime
 import subprocess
 
+
+class ChronyConfig():
+    """A semi-parsed config file for chrony"""
+
+    CONFIG_PATH = "/etc/chrony/chrony.conf"
+    RIAPS_TIMESYNC_START = "RIAPS_TIMESYNC_START"
+    RIAPS_TIMESYNC_END = "RIAPS_TIMESYNC_END"
+
+
+    def __init__(self):
+        self.lines = []
+        self.servers = []
+        self.use_gps = False
+
+    def load(self):
+        with open(self.CONFIG_PATH) as conf:
+            in_riaps_timesync = False
+            self.lines = conf.readlines()
+            for line in self.lines: 
+                if self.RIAPS_TIMESYNC_END in line:
+                    in_riaps_timesync = False
+                elif self.RIAPS_TIMESYNC_START in line:
+                    in_riaps_timesync = True
+                elif in_riaps_timesync:
+                    tokens = line.strip().split()
+                    if tokens[0] == "server":
+                        self.servers.append(tokens[1])
+                    if tokens[0] == "refclock":
+                        self.use_gps = True
+
+    def save(self):
+        with open(self.CONFIG_PATH, "w") as conf:
+            in_riaps_timesync = False
+            for line in self.lines:
+                if self.RIAPS_TIMESYNC_END in line:
+                    conf.write(line)
+                    in_riaps_timesync = False
+                elif self.RIAPS_TIMESYNC_START in line:
+                    conf.write(line)
+                    if self.use_gps:
+                        conf.write("refclock PPS /dev/pps0 refid PPS lock NMEA\n")
+                        conf.write("refclock SHM 0 offset 0.212 delay 0.2 precision 1e-1 refid NMEA noselect\n")
+                    for server in self.servers:
+                        conf.write("server %s iburst\n" % (server,))
+                    in_riaps_timesync = True
+                elif not in_riaps_timesync:
+                    conf.write(line)
+
+
+
 def sleep():
     """Intelligent sleep, based on conditions"""
     interval = 10.0
@@ -22,17 +72,39 @@ def get_control_host_addrs():
     try:
         proc = subprocess.Popen(helper, stdout=subprocess.PIPE)
         out, err = proc.communicate()
-        logging.info(out)
+        host_addrs = [addr.strip() for addr in out.decode().split()]
     except Exception as e:
         logging.warn("exec error %s: %s", helper, str(e))
+    return host_addrs
+
+def is_gps_available():
+    """Check if GPS is available"""
+    return os.path.exists("/dev/pps0") and os.path.exists("/dev/gps0")
+
 
 def main():
     """Life starts here"""
     logging.basicConfig(format='%(levelname)s:%(message)s',
                         level=logging.INFO)
     while True:
-        get_control_host_addrs()
+        ctrl_host_addrs = get_control_host_addrs()
+        has_gps = is_gps_available()
+        logging.info("env has_gps: %s, control_hosts: %s", str(has_gps), str(ctrl_host_addrs))
+
+        conf = ChronyConfig()
+        conf.load()
+        logging.info("conf use_gps: %s, servers: %s", str(conf.use_gps), str(conf.servers))
+
+        if has_gps != conf.use_gps or sorted(ctrl_host_addrs) != sorted(conf.servers):
+            logging.info("env-conf mismatch, reconfiguring")
+            conf.servers = ctrl_host_addrs
+            conf.use_gps = has_gps
+            conf.save()
+            subprocess.run(["systemctl", "restart", "chrony"])
+
+
         sleep()
+
 
 if __name__ == "__main__":
     main()
