@@ -69,6 +69,7 @@ def sleep():
 def get_control_host_addrs():
     """Return a list of ip addressed of the current control host"""
     helper = "/usr/local/bin/riaps_ctrl_host"
+    host_addrs = []
     try:
         proc = subprocess.Popen(helper, stdout=subprocess.PIPE)
         out, err = proc.communicate()
