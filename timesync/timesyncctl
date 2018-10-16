@@ -116,21 +116,23 @@ def do_status():
                 source_sha1.update(open(source_file, "rb").read())
                 target_sha1 = hashlib.sha1()
                 target_sha1.update(open(target_file, "rb").read())
-                if source_sha1.digest() != target_sha1.digest():
-                    logging.warning("Corrupt configuration file: %s", target_file)
-                    every_ok = False
+                #if source_sha1.digest() != target_sha1.digest():
+                #    logging.warning("Corrupt configuration file: %s", target_file)
+                #    every_ok = False
 
     logging.debug('Verifying services')
     for service_status, service_name in services:
         logging.debug('Checking service: %s', service_name)
         with open(os.devnull, 'wb') as hide_output:
-            exit_code = subprocess.Popen(['systemctl', 'is-enabled', service_name],
-                                         stdout=hide_output, stderr=hide_output).wait()
+            proc = subprocess.Popen(['systemctl', 'is-enabled', service_name],
+                                         stdout=subprocess.PIPE, stderr=hide_output)
+            out, err = proc.communicate()
+            is_enabled = "enabled" in out.decode()
             if service_status == '+':
-                if exit_code != 0:
+                if not is_enabled:
                     logging.warning("Service %s is not enabled", service_name)
                     every_ok = False
-            elif exit_code == 0:
+            elif is_enabled:
                 logging.warning("Service %s is enabled (should be disabled)", service_name)
                 every_ok = False
 

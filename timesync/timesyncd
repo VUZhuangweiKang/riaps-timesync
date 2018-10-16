@@ -96,7 +96,7 @@ def main():
         conf.load()
         logging.info("conf use_gps: %s, servers: %s", str(conf.use_gps), str(conf.servers))
 
-        if has_gps != conf.use_gps or sorted(ctrl_host_addrs) != sorted(conf.servers):
+        if has_gps != conf.use_gps or (ctrl_host_addrs and sorted(ctrl_host_addrs) != sorted(conf.servers)):
             logging.info("env-conf mismatch, reconfiguring")
             conf.servers = ctrl_host_addrs
             conf.use_gps = has_gps
