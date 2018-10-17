@@ -1,0 +1,87 @@
+/*
+ * Copyright (C) 2016 Vanderbilt University
+ *
+ * Author: Peter Volgyesi <peter.volgyesi@vanderbilt.edu>
+ */
+/dts-v1/;
+/plugin/;
+
+/*
+#define BONE_P9_26 0x180
+#define BONE_P9_24 0x184
+#define BONE_P8_07 0x090
+#define PULL_DISABLE		(1 << 3)
+#define INPUT_EN		(1 << 5)
+#define SLEWCTRL_SLOW		(1 << 6)
+#define SLEWCTRL_FAST		0
+#define PIN_OUTPUT		(PULL_DISABLE)
+#define PIN_INPUT		(INPUT_EN | PULL_DISABLE)
+#define MUX_MODE0		0
+#define MUX_MODE7		7
+*/
+
+
+#include <dt-bindings/board/am335x-bbw-bbb-base.h>
+#include <dt-bindings/pinctrl/am33xx.h>
+
+
+/ {
+	compatible = "ti,beaglebone", "ti,beaglebone-black", "ti,beaglebone-green";
+
+        /* identification */
+        part-number = "CHRONOCAPE";
+        version = "00A0";
+
+        /* state the resources this cape uses */
+        exclusive-use =
+                /* the pin header uses */
+                "P9.26",        /* uart1_rxd */
+                "P9.24",        /* uart1_txd */
+                "P8.7",        /* timer4/GPIO_66   */
+                /* the hardware ip uses */
+                "uart1", /* 0-based counting */
+                "gpio2_2"; /* 0-based counting */
+
+        fragment@0 {
+                target = <&am33xx_pinmux>;
+                __overlay__ {
+                        cc_uart1_pins: pinmux_cc_uart1_pins {
+                                pinctrl-single,pins = <
+					BONE_P9_26 (PIN_INPUT | MUX_MODE0)	// uart1_rxd.uart1_rxd
+					BONE_P9_24 (PIN_OUTPUT | MUX_MODE0)	// uart1_txd.uart1_txd
+                                >;
+                        };
+
+                        cc_pps_pins: pinmux_cc_pps_pins {
+                                pinctrl-single,pins = <
+					BONE_P8_07 (PIN_INPUT | MUX_MODE7)
+                                >;
+                        };
+
+                };
+        };
+
+        fragment@1 {
+                target = <&uart1>;      /* 1-based counting */
+                __overlay__ {
+                        status = "okay";
+                        pinctrl-names = "default";
+                        pinctrl-0 = <&cc_uart1_pins>;
+                };
+        };
+
+        fragment@2 {
+                target = <&ocp>;
+
+                __overlay__ {
+                        pps {
+                                compatible = "pps-gpio";
+                                status = "okay";
+                                pinctrl-names = "default";
+                                pinctrl-0 = <&cc_pps_pins>;
+                                gpios = <&gpio2 2 0 >; /* 1-based counting */
+                                assert-rising-edge;
+                        };
+                };
+        };
+};
