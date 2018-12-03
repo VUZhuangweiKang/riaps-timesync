@@ -33,9 +33,9 @@ Running **timesyncctl**:
 
 Examples:
 
-To configure the node for a GPS master role:
+To configure the node for a master role:
 
-    sudo /opt/riaps/armhf/bin/timesyncctl config gps-master
+    sudo /opt/riaps/armhf/bin/timesyncctl config master
 
 To check if everything is as expected in the current role:
 
