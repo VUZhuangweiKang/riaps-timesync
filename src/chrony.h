@@ -1,12 +1,39 @@
-/**
- *  RIAPS Timesync Service
- *
- *  Copyright (C) Vanderbilt University, ISIS 2016
- */
-
-/* Communication with chrony. NOTE: contains code from the crony project. */
+/****************************************************************************
+ * Copyright (c) 2016-2019, Vanderbilt University.                          *
+ *                                                                          *
+ * Developed with the sponsorship of the                                    *
+ * Advanced Research Projects Agency – Energy (ARPA-E)                      *
+ * of the Department of Energy.                                             *
+ *                                                                          *
+ * Licensed under the Apache License, Version 2.0 (the "License");          *
+ * you may not use this file except in compliance with the License.         *
+ * You may obtain a copy of the License at                                  *
+ *                                                                          *
+ *      http://www.apache.org/licenses/LICENSE-2.0                          *
+ *                                                                          *
+ * Unless required by applicable law or agreed to in writing, software      *
+ * distributed under the License is distributed on an "AS IS" BASIS,        *
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. *
+ * See the License for the specific language governing permissions and      *
+ * limitations under the License.                                           *
+ ****************************************************************************/
 #ifndef _CHRONY_H_
 #define _CHRONY_H_
+
+
+/**
+ * @file chrony.h
+ * @author Peter Volgyesi
+ * @warning Contains code from the crony open-source project (GPL v2)
+ *
+ * @brief RIAPS Timesync Service - Communication with the chrony daemon.
+ *
+ * This module contains a lightweight interface to communicate with the
+ * running chrony daemon via its UDP command socket. The functions in this
+ * module are not supposed to be used by application level code, but provided
+ * for higher-level interfaces in the riaps-timesync service.
+ */
+
 
 #include <stddef.h>
 #include <stdio.h>
@@ -18,25 +45,31 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
-#define CHRONY_CMD_ADDR "127.0.0.1"
-#define CHRONY_CMD_PORT 323
+#define CHRONY_CMD_ADDR "127.0.0.1" /**< Only local chrony daemons are supported */
+#define CHRONY_CMD_PORT 323         /**< Hardwired command (UDP) port of chrony */
 
-#define MAX_PADDING_LENGTH 396
-#define PROTO_VERSION_NUMBER 6
+#define MAX_PADDING_LENGTH 396      /**< Hardwired chrony communication parameter */
+#define PROTO_VERSION_NUMBER 6      /**< Currently supported CMD protocol */
 
-#define CHRONY_TIMEOUT 1
-#define CHRONY_MAX_RETRIES 3
+#define CHRONY_TIMEOUT 1            /**< Connection timeout in seconds */
+#define CHRONY_MAX_RETRIES 3        /**< Number of connection retries before giving up */
 
 /*** Custom types ***/
 #define IPADDR_UNSPEC 0
 #define IPADDR_INET4 1
 #define IPADDR_INET6 2
 
+/**
+ * @brief Chrony's 32-bit floating point type. @see double_from_chrony_float_t()
+ */
 typedef struct
 {
     int32_t f;
 } chrony_float_t;
 
+/**
+ * @brief Definition of @c timeval_t using 32-bit integers
+ */
 typedef struct
 {
     uint32_t tv_sec_high;
@@ -60,11 +93,18 @@ typedef struct
 /*** Requests ***/
 #define REQ_TRACKING 33
 
+/**
+ * @brief Chrony end-of-request (null request)
+ */
 typedef struct
 {
     int32_t EOR;
 } req_null;
 
+
+/**
+ * @brief Chrony CMD protocol request datagram format
+ */
 typedef struct
 {
     uint8_t version;
@@ -94,6 +134,9 @@ typedef struct
     int32_t EOR;
 } rep_null;
 
+/**
+ * @brief Chrony CMD protocol tracking datagram format
+ */
 typedef struct
 {
     uint32_t ref_id;
@@ -113,6 +156,9 @@ typedef struct
     int32_t EOR;
 } rep_tracking;
 
+/**
+ * @brief Chrony CMD protocol reply datagram format
+ */
 typedef struct
 {
     uint8_t version;
@@ -142,9 +188,42 @@ typedef struct
 #define REP_LENGTH(reply_data_field) \
   offsetof(chrony_rep, data.reply_data_field.EOR)
 
+/**
+ * @brief Makes a standalone request and waits for the reply from chrony.
+ *
+ * Note, that both communication buffers (req/rep) have to be preallocated.
+ *
+ * @param req Pointer to the allocated and initialized request buffer
+ * @param req_len The size of the allocated request buffer
+ * @param rep Pointer to the pre-allocated reply buffer
+ * @param rep_len The size of the pre-allocated reply buffer
+ * @param rep_id Filtering response messages to match this ID
+ * @return Zero, if succeeded and a valid response has been received.
+ */
 int chrony_request(chrony_req* req, int req_len, chrony_rep* rep, int rep_len, int rep_id);
+
+/**
+ * @brief Get the integer (seconds) part of the @c timeval_t value
+ *
+ * @param timeval Pointer to the @c timeval_t value
+ * @return The integer part in seconds
+ */
 time_t sec_of_timeval(const timeval_t* timeval);
+
+/**
+ * @brief Get the fractional (nanosec) part of the @c timeval_t value
+ *
+ * @param timeval Pointer to the @c timeval_t value
+ * @return The fractional part in integer nanoseconds
+ */
 long nsec_of_timeval(const timeval_t* timeval);
+
+/**
+ * @brief Convert from chrony 32-bit floating point type to double. 
+ *
+ * @param f Pointer to the 32-bit source value
+ * @return The standard C double representation of the floating point value
+ */
 double double_from_chrony_float_t(const chrony_float_t* f);
 
 #endif // _CHRONY_H_
