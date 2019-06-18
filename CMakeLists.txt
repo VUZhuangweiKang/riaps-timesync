@@ -4,7 +4,7 @@
 #
 
 cmake_minimum_required (VERSION 3.0.0)
-project (riaps-timesync VERSION 1.1.1)
+project (riaps-timesync VERSION 1.1.15)
 
 
 set(arch "amd64" CACHE STRING "amd64/armhf")
