@@ -14,8 +14,8 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 import subprocess
-subprocess.call('cd .. ; cmake ..', shell=True)
-subprocess.call('cd .. ; make doc', shell=True)
+subprocess.call('cd ../build ; cmake ..', shell=True)
+subprocess.call('cd ../build ; make doc', shell=True)
 
 # -- Project information -----------------------------------------------------
 
